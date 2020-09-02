@@ -5,7 +5,6 @@
 * [Python 3.6 installed](https://www.python.org/downloads/)
 * [Pipenv installed](https://github.com/pypa/pipenv)
     - `pip install pipenv`
-* [Docker installed](https://www.docker.com/community-edition)
 * [SAM Local installed](https://github.com/awslabs/aws-sam-local) 
 
 
