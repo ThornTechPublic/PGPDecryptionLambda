@@ -1,0 +1,38 @@
+{
+  "Records": [
+    {
+      "eventVersion": "2.1",
+      "eventSource": "aws:s3",
+      "awsRegion": "us-east-1",
+      "eventTime": "2020-08-03T17:49:25.112Z",
+      "eventName": "ObjectCreated:Put",
+      "userIdentity": {
+        "principalId": "AWS:AROARWXA7VPDA3E2BLQKL:i-0527a6646a5715aae"
+      },
+      "requestParameters": {
+        "sourceIPAddress": "3.233.251.51"
+      },
+      "responseElements": {
+        "x-amz-request-id": "CAB6F7ADE19BC4B4",
+        "x-amz-id-2": "94CQEalPo/aaYZ/rve1c97/1wzInk0WAa9ayojCCXB7/+HxJMTFZ68zoOvjkcIESz4Y2wkfkt5mhaxmSBZppxUx+5qlW0B76"
+      },
+      "s3": {
+        "s3SchemaVersion": "1.0",
+        "configurationId": "gpg-file-uploaded",
+        "bucket": {
+          "name": "chris-pgp-file-bucket",
+          "ownerIdentity": {
+            "principalId": "A2EZ1Z415I08CW"
+          },
+          "arn": "arn:aws:s3:::chris-pgp-file-bucket"
+        },
+        "object": {
+          "key": "bobtest/uploads/testfile1.txt.gpg",
+          "size": 362,
+          "eTag": "9ddd36600d688ced508bdaf1e1eca5e6",
+          "sequencer": "005F284E259AE558F7"
+        }
+      }
+    }
+  ]
+}
