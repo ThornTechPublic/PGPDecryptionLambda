@@ -6,6 +6,6 @@ Resources:
     Properties:
       Handler: pgplambda.lambda_handler
       CodeUri: src
-      Runtime: python3.6
+      Runtime: python3.9
       Timeout: 300
       MemorySize: 128

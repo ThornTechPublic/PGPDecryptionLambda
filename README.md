@@ -2,10 +2,26 @@
 
 ## Requirements
 * AWS CLI with Administrator permission
-* [Python 3.6 installed](https://www.python.org/downloads/)
+* [Python 3.9 installed](https://www.python.org/downloads/)
 * [Pipenv installed](https://github.com/pypa/pipenv)
     - `pip install pipenv`
 * [SAM Local installed](https://github.com/awslabs/aws-sam-local) 
+
+## Environment setup
+1. run `pipenv install -r src/requirements.txt`
+2. run `pipenv lock && pipenv sync`
+
+## Updating python version
+1. Update `required:python_version` in Pipfile to "3.9"
+2. run `pipenv install --python=python3.9`
+
+## Updating dependencies
+### To unpin dependencies and allow them to be updated
+1. modify dependency version in pipfile from `==x.x.x` to `>=x.x.x`
+2. run `pipenv update`
+### To pin dependencies into a non-updatable state
+1. run `pipenv run freeze > src/requirements.txt`
+2. run `pipenv install -r src/requriement.txt`
 
 
 ## Keys
@@ -31,7 +47,7 @@ gpg --import public.key
 
 An ASC file is an Armored ASCII file that is generated as plain ASCII text. 
 
-To create a ASC file to be used in the decryption process use the command:
+To create an ASC file to be used in the decryption process use the command:
 ```shell script
 gpg --export-secret-key -a username > private.asc
 ```
