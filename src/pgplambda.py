@@ -27,9 +27,10 @@ s3 = boto3.resource('s3')
 
 # Global variables
 actions_taken = []
-asc_key_downloaded_for_client = ""
-pgp_key_s3_bucket = 'chris-pgp-key-bucket'
-asc_remote_key = 'chris.asc'
+asc_key_downloaded_for_client = ''
+PGP_KEY_S3_BUCKET = os.environ.get('PGP_KEY_LOCATION')
+ASC_REMOTE_KEY = os.environ.get('PGP_KEY_NAME')
+DECRYPTED_DONE_BUCKET = os.environ.get('DECRYPTED_DONE_BUCKET')
 
 # Directories
 download_dir = '/tmp/downloads/'
@@ -107,15 +108,15 @@ def download_asc():
     asc_dir = trim_path_to_directory(asc_local_path)
     if not os.path.exists(asc_dir):
         mkdir(asc_dir)
-    logger.info('Attempting to download key from {}/{}'.format(pgp_key_s3_bucket, asc_remote_key))
-    s3.meta.client.download_file(pgp_key_s3_bucket, asc_remote_key, asc_local_path)
+    logger.info('Attempting to download key from {}/{}'.format(PGP_KEY_S3_BUCKET, ASC_REMOTE_KEY))
+    s3.meta.client.download_file(PGP_KEY_S3_BUCKET, ASC_REMOTE_KEY, asc_local_path)
     key_data = open(asc_local_path).read()
     # Disable logging of key data while importing the key
     level = logger.level
     logger.setLevel(logging.WARN)
     import_result = gpg.import_keys(key_data)
     logger.setLevel(level)
-    logger.info('key import result fingerprint: {}'.format(", ".join(import_result.fingerprints)))
+    logger.info('key import result fingerprint: {}'.format(', '.join(import_result.fingerprints)))
 
 
 def decrypt(source_filepath):

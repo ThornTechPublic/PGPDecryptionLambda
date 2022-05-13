@@ -1,5 +1,15 @@
 AWSTemplateFormatVersion: 2010-09-09
 Transform: 'AWS::Serverless-2016-10-31'
+Parameters:
+  PgpKeyLocation:
+    Type: String
+    Description: "S3 bucket where the PGP private key is located"
+  PgpKeyName:
+    Type: String
+    Description: "Name of the PGP private key"
+  DecryptedTargetBucket:
+    Type: String
+    Description: "S3 Bucket where files will land lambda decryption"
 Resources:
   PgpLambda:
     Type: AWS::Serverless::Function
@@ -9,3 +19,12 @@ Resources:
       Runtime: python3.9
       Timeout: 300
       MemorySize: 128
+      Environment:
+        Variables:
+          PGP_KEY_LOCATION:
+            Ref: PgpKeyLocation
+          PGP_KEY_NAME:
+            Ref: PgpKeyName
+          DECRYPTED_DONE_BUCKET:
+            Ref: DecryptedTargetBucket
+
