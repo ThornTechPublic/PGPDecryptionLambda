@@ -16,6 +16,8 @@ Resources:
     Properties:
       Handler: pgplambda.lambda_handler
       CodeUri: src
+      Layers:
+        - !Ref GpgDependencies
       Runtime: python3.9
       Timeout: 300
       MemorySize: 128
@@ -27,4 +29,12 @@ Resources:
             Ref: PgpKeyName
           DECRYPTED_DONE_BUCKET:
             Ref: DecryptedTargetBucket
+  GpgDependencies:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: gnupg-layer
+      Description: Dependencies for GPG decription
+      ContentUri: dependencies/
+      CompatibleRuntimes:
+        - python3.9
 

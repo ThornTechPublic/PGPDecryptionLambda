@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "76a834266c4ad5c811fb2f130a06c01a659031c339836e1f210918387086d74e"
+            "sha256": "b5e151fcf89982bb1f10562089c031063f7faf54383376f29ce4ef9486a13fdf"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -18,19 +18,19 @@
     "default": {
         "boto3": {
             "hashes": [
-                "sha256:4b3a49abf7a5f7cdd82714a3ae356a9a8ce12a668e014c5fc68454aa1e2fc0cb",
-                "sha256:9830d7f8748c164a3f0929d8a0c5bb313cc62d7cf69ce55617108bed451a8520"
+                "sha256:07c4d128cb625f9459af8b6dff65ad9c3475e3b186f81c0e57af3d563d933cbd",
+                "sha256:a5b7cce2473cb7f61a9684a68799f80b049236de62e63e7b4cd2bb0d1e9c58ad"
             ],
             "index": "pypi",
-            "version": "==1.22.12"
+            "version": "==1.23.0"
         },
         "botocore": {
             "hashes": [
-                "sha256:53e19890124be45e47ec4f7ffdaf587343d375dbd7c7a501e55aeff80680fec0",
-                "sha256:e2fc586fdc0b54c08fc509e906e87fb358b9f5607b12f526f995ee74a4a4bcd3"
+                "sha256:25c43b8a7950d785daf3840bb10277378f36d41b208be3e01614537bdb419fe7",
+                "sha256:4c7ae9198ffbe1a834fd3928d2e6a4c68250c0d9f82e70c32b652d3525bec9c3"
             ],
             "index": "pypi",
-            "version": "==1.25.12"
+            "version": "==1.26.0"
         },
         "docutils": {
             "hashes": [
@@ -58,11 +58,11 @@
         },
         "python-gnupg": {
             "hashes": [
-                "sha256:93a521501d6c2785d96b190aec7125ba89c1c2fe708b0c98af3fb32b59026ab8",
-                "sha256:b64de1ae5cedf872b437201a566fa2c62ce0c95ea2e30177eb53aee1258507d7"
+                "sha256:45daf020b370bda13a1429c859fcdff0b766c0576844211446f9266cae97fb0e",
+                "sha256:85c231850a0275c9722f06e34b45a22510b83a6a6e88f93b5ae32ba04c95056c"
             ],
             "index": "pypi",
-            "version": "==0.4.8"
+            "version": "==0.4.4"
         },
         "s3transfer": {
             "hashes": [
