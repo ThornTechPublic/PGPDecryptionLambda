@@ -10,6 +10,9 @@ Parameters:
   DecryptedTargetBucket:
     Type: String
     Description: "S3 Bucket where files will land lambda decryption"
+  EncryptedSourceBucket:
+    Type: String
+    Description: "S3 Bucket that triggers lambda to decrypt files. Needed for permissions"
 Resources:
   PgpLambda:
     Type: AWS::Serverless::Function
@@ -21,6 +24,23 @@ Resources:
       Runtime: python3.9
       Timeout: 300
       MemorySize: 128
+      Policies:
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: "Allow"
+              Action:
+                - "s3:ListBucket"
+              Resource:
+                - !Sub "arn:aws:s3:::${DecryptedTargetBucket}"
+                - !Sub "arn:aws:s3:::${EncryptedSourceBucket}"
+                - !Sub "arn:aws:s3:::${PgpKeyLocation}"
+            - Effect: "Allow"
+              Action:
+                - "s3:*Object"
+              Resource:
+                - !Sub "arn:aws:s3:::${DecryptedTargetBucket}/*"
+                - !Sub "arn:aws:s3:::${EncryptedSourceBucket}/*"
+                - !Sub "arn:aws:s3:::${PgpKeyLocation}/*"
       Environment:
         Variables:
           PGP_KEY_LOCATION:

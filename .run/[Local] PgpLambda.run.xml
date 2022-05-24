@@ -7,6 +7,7 @@
     <option name="environmentVariables">
       <map>
         <entry key="DECRYPTED_DONE_BUCKET" value="chris-sftpgw-pgp-done" />
+        <entry key="EncryptedSourceBucket" value="chris-sftpgw-pgp-encrypted" />
         <entry key="PGP_KEY_LOCATION" value="chris-pgp-keys" />
         <entry key="PGP_KEY_NAME" value="chris.asc" />
       </map>

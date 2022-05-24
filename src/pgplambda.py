@@ -1,25 +1,22 @@
 import collections
-import zipfile
-
-import boto3
-import gnupg
-import json
 import logging
 import os
 import re
 import shutil
 import sys
 import traceback
-
-from botocore.exceptions import ClientError
-from urllib import parse
-
+import zipfile
 from os import listdir, mkdir
 from os.path import join, isfile
+from urllib import parse
+
+import boto3
+import gnupg
+from botocore.exceptions import ClientError
 
 # Logger
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.getLevelName(os.environ.get('LOG_LEVEL', default='INFO')))
 logger.info('Loading function')
 
 # AWS resources
@@ -37,7 +34,7 @@ download_dir = '/tmp/downloads/'
 decrypt_dir = '/tmp/decrypted/'
 local_unzipped_dir = '/tmp/unzipped/'
 local_ready_dir = '/tmp/ready/'
-asc_local_path = '/tmp/asc/secret_key.asc'
+asc_local_path = '/tmp/asc/'
 ready_dir = 'ready/'
 
 # GPG
@@ -46,14 +43,9 @@ gpg = gnupg.GPG(gnupghome=gnupg_home)
 decrypt_result = collections.namedtuple('DecryptResult', ['path', 'ok'])
 
 
-
-def parse_sftpuser(path):
-    return path.split('/')[0]
-
-
 # deletes the contents of a local folder and recreates it
 def reset_folder(local_path):
-    logger.info('deleting local contents of {}'.format(local_path))
+    logger.debug('deleting local contents of {}'.format(local_path))
     if os.path.exists(local_path):
         shutil.rmtree(local_path)
     mkdir(local_path)
@@ -77,9 +69,8 @@ def error_on_s3(bucket, key):
 
 
 def move_on_s3(dest_folder, bucket, key):
-    client_name = parse_sftpuser(key)
     download_filename = trim_path_to_filename(key)
-    new_key = join(client_name, dest_folder, download_filename)
+    new_key = join(dest_folder, download_filename)
     logger.info('move original file to ' + new_key)
     s3.Object(bucket, new_key).copy_from(CopySource='{0}/{1}'.format(bucket, key))
     logger.info('deleting original upload file')
@@ -87,7 +78,7 @@ def move_on_s3(dest_folder, bucket, key):
 
 
 def download_file(bucket, download_path, key):
-    logger.info('downloading {0}/{1} to {2}'.format(bucket, key, download_path))
+    logger.info('downloading s3://{0}/{1} to {2}'.format(bucket, key, download_path))
     try:
         s3.meta.client.download_file(bucket, key, download_path)
         exists = True
@@ -96,7 +87,7 @@ def download_file(bucket, download_path, key):
         if error_code == 404:
             exists = False
             logger.warning(
-                'attempt to download {0}/{1} failed, it was not found. Most likely file was already processed.'.format(
+                'attempt to download s3://{0}/{1} failed, it was not found. Most likely file was already processed.'.format(
                     bucket, key))
         else:
             raise e
@@ -108,9 +99,10 @@ def download_asc():
     asc_dir = trim_path_to_directory(asc_local_path)
     if not os.path.exists(asc_dir):
         mkdir(asc_dir)
-    logger.info('Attempting to download key from {}/{}'.format(PGP_KEY_S3_BUCKET, ASC_REMOTE_KEY))
-    s3.meta.client.download_file(PGP_KEY_S3_BUCKET, ASC_REMOTE_KEY, asc_local_path)
-    key_data = open(asc_local_path).read()
+    logger.info('Attempting to download key from s3://{}/{}'.format(PGP_KEY_S3_BUCKET, ASC_REMOTE_KEY))
+    local_key = join(asc_local_path, ASC_REMOTE_KEY)
+    s3.meta.client.download_file(PGP_KEY_S3_BUCKET, ASC_REMOTE_KEY, local_key)
+    key_data = open(local_key).read()
     # Disable logging of key data while importing the key
     level = logger.level
     logger.setLevel(logging.WARN)
@@ -124,7 +116,7 @@ def decrypt(source_filepath):
     with open(source_filepath, 'rb') as f:
         source_filename = trim_path_to_filename(source_filepath)
         decrypt_path = join(decrypt_dir, re.sub(r'\.(pgp|gpg)$', '', source_filename))
-        logger.info('decrypting to {}'.format(decrypt_path))
+        logger.info('Decrypting to {}'.format(decrypt_path))
         data = gpg.decrypt_file(f, always_trust=True, output=decrypt_path)
         logger.info('Decrypt status: {}'.format(data.status))
         return decrypt_result(decrypt_path, data.ok)
@@ -151,7 +143,7 @@ def unzip(source_filename, dest_dir):
         zf.extractall(dest_dir)
 
 
-def process_files(sftpuser):
+def process_files():
     while listdir(download_dir):
         for f in listdir(download_dir):
             file_path = join(download_dir, f)
@@ -175,14 +167,13 @@ def process_files(sftpuser):
                 sort_local_files(download_dir, local_ready_dir)
 
 
-def copy_files(copy_source_dir, bucket, sftpuser):
+def copy_files(copy_source_dir, bucket):
     for f in listdir(copy_source_dir):
-        file_path =join(copy_source_dir, f)
+        file_path = join(copy_source_dir, f)
         if isfile(file_path):
             logger.info('Processing: ' + file_path)
-            dest_key = join(sftpuser, ready_dir, f)
-            logger.info('Uploading: {} to {}'.format(file_path, dest_key))
-            s3.meta.client.upload_file(file_path, bucket, dest_key)
+            logger.info('Uploading: {} to {}'.format(file_path, f))
+            s3.meta.client.upload_file(file_path, bucket, f)
 
 
 # Archive and delete the file in the s3 bucket
@@ -192,9 +183,8 @@ def archive_on_s3(bucket, key):
 
 def move_on_s3(dest_folder, bucket, key):
     # store file in error
-    sftpuser = parse_sftpuser(key)
     download_filename = trim_path_to_filename(key)
-    new_key = join(sftpuser, dest_folder, download_filename)
+    new_key = join(dest_folder, download_filename)
     logger.info('move original file to ' + new_key)
     s3.Object(bucket, new_key).copy_from(CopySource='{}/{}'.format(bucket, key))
     logger.info('deleting original upload file')
@@ -202,12 +192,20 @@ def move_on_s3(dest_folder, bucket, key):
 
 
 def lambda_handler(event, context):
+    logger.debug('S3 Event: ' + str(event))
     for record in event['Records']:
         del actions_taken[:]
         bucket = record['s3']['bucket']['name']
         key = parse.unquote_plus(record['s3']['object']['key'])
-        sftpuser = parse_sftpuser(key)
+        prefix = trim_path_to_directory(key)
         download_filename = trim_path_to_filename(key)
+
+        if prefix == 'archive/':
+            logger.debug('Archive event triggered... Skipping')
+            continue
+        elif prefix == 'error/':
+            logger.debug('Error event triggered... Skipping')
+            continue
 
         try:
             reset_folder(download_dir)
@@ -215,7 +213,7 @@ def lambda_handler(event, context):
             reset_folder(local_unzipped_dir)
             reset_folder(local_ready_dir)
 
-            logger.info('Begin Processing {0}/{1}'.format(bucket, key))
+            logger.info('Begin Processing s3://{0}/{1}'.format(bucket, key))
 
             if not download_filename:
                 logger.info('Skipping processing of folder {0}'.format(key))
@@ -227,19 +225,21 @@ def lambda_handler(event, context):
 
             if file_exists:
                 # process until download_dir is empty
-                process_files(sftpuser)
+                process_files()
 
                 # copy ready files to s3 ready bucket
                 logger.info('Uploading files')
-                copy_files(local_ready_dir, bucket, sftpuser)
+                copy_files(local_ready_dir, DECRYPTED_DONE_BUCKET)
                 archive_on_s3(bucket, key)
         except Exception:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
-            message = 'Unexpected error while processing upload {}/{}. The file has been moved to the error folder. ' \
-                      'Stack trace follows: {}'.format(bucket, key, ''.join('!! '
-                                                                            + line for line in lines))
+            message = 'Unexpected error while processing upload s3://{bucket}/{key}, with message \"{message}\". The file ' \
+                      'has been moved to the error folder. ' \
+                      'Stack trace follows: {trace}'.format(message=exc_value, bucket=bucket, key=key,
+                                                            trace=''.join('!! '
+                                                                          + line for line in lines))
             logger.error(message)
-            # error_on_s3(bucket, key)
+            error_on_s3(bucket, key)
             return 'failure.'
     return 'success.'
