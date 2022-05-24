@@ -1,36 +1,36 @@
 {
-  "Records": [
+  'Records': [
     {
-      "eventVersion": "2.1",
-      "eventSource": "aws:s3",
-      "awsRegion": "us-east-1",
-      "eventTime": "2020-08-03T17:49:25.112Z",
-      "eventName": "ObjectCreated:Put",
-      "userIdentity": {
-        "principalId": "AWS:AROARWXA7VPDA3E2BLQKL:i-0527a6646a5715aae"
+      'eventVersion': '2.1',
+      'eventSource': 'aws:s3',
+      'awsRegion': 'us-east-1',
+      'eventTime': '2022-05-24T15:45:52.571Z',
+      'eventName': 'ObjectCreated:Put',
+      'userIdentity': {
+        'principalId': 'AWS:AROAJJ7VOMN5K2BMTX5I6:cgick'
       },
-      "requestParameters": {
-        "sourceIPAddress": "3.233.251.51"
+      'requestParameters': {
+        'sourceIPAddress': '73.134.100.131'
       },
-      "responseElements": {
-        "x-amz-request-id": "CAB6F7ADE19BC4B4",
-        "x-amz-id-2": "94CQEalPo/aaYZ/rve1c97/1wzInk0WAa9ayojCCXB7/+HxJMTFZ68zoOvjkcIESz4Y2wkfkt5mhaxmSBZppxUx+5qlW0B76"
+      'responseElements': {
+        'x-amz-request-id': 'W859TVW1BW53ZG97',
+        'x-amz-id-2': 'kXGXk21GRR6V1yh0E4+oTY19teSFuxHol3sj4L7qA6ujfWbJE2K2AvNarItIiGhd1gfeAIxLTvO4hJ/A6FxnENYGkR2lQpPBYw9i4sueQQM='
       },
-      "s3": {
-        "s3SchemaVersion": "1.0",
-        "configurationId": "gpg-file-uploaded",
-        "bucket": {
-          "name": "chris-pgp-file-bucket",
-          "ownerIdentity": {
-            "principalId": "A2EZ1Z415I08CW"
+      's3': {
+        's3SchemaVersion': '1.0',
+        'configurationId': 'pgpUploaded',
+        'bucket': {
+          'name': 'chris-sftpgw-pgp-encrypted',
+          'ownerIdentity': {
+            'principalId': 'A2EZ1Z415I08CW'
           },
-          "arn": "arn:aws:s3:::chris-pgp-file-bucket"
+          'arn': 'arn:aws:s3:::chris-sftpgw-pgp-encrypted'
         },
-        "object": {
-          "key": "bobtest/uploads/testfile1.txt.gpg",
-          "size": 362,
-          "eTag": "9ddd36600d688ced508bdaf1e1eca5e6",
-          "sequencer": "005F284E259AE558F7"
+        'object': {
+          'key': 'test.txt.gpg',
+          'size': 373,
+          'eTag': '062b1101b2a1a6c4b10c4ed911c8445f',
+          'sequencer': '00628CFDB0813C99C3'
         }
       }
     }
