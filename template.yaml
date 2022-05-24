@@ -36,7 +36,9 @@ Resources:
                 - !Sub "arn:aws:s3:::${PgpKeyLocation}"
             - Effect: "Allow"
               Action:
-                - "s3:*Object"
+                - "s3:PutObject"
+                - "s3:GetObject"
+                - "s3:DeleteObject"
               Resource:
                 - !Sub "arn:aws:s3:::${DecryptedTargetBucket}/*"
                 - !Sub "arn:aws:s3:::${EncryptedSourceBucket}/*"
