@@ -20,7 +20,7 @@ logger.setLevel(logging.getLevelName(os.environ.get('LOG_LEVEL', default='INFO')
 logger.info('Loading function')
 
 # AWS resources
-s3 = boto3.resource('s3')
+S3 = boto3.resource('s3')
 
 # Global variables
 actions_taken = []
@@ -30,17 +30,20 @@ ASC_REMOTE_KEY = os.environ.get('PGP_KEY_NAME')
 DECRYPTED_DONE_BUCKET = os.environ.get('DECRYPTED_DONE_BUCKET')
 
 # Directories
-download_dir = '/tmp/downloads/'
-decrypt_dir = '/tmp/decrypted/'
-local_unzipped_dir = '/tmp/unzipped/'
-local_ready_dir = '/tmp/ready/'
-asc_local_path = '/tmp/asc/'
-ready_dir = 'ready/'
+DOWNLOAD_DIR = '/tmp/downloads/'
+DECRYPT_DIR = '/tmp/decrypted/'
+LOCAL_UNZIPPED_DIR = '/tmp/unzipped/'
+LOCAL_READY_DIR = '/tmp/ready/'
+ASC_LOCAL_PATH = '/tmp/asc/'
 
 # GPG
 gnupg_home = '/tmp/gnupg'
 gpg = gnupg.GPG(gnupghome=gnupg_home)
 decrypt_result = collections.namedtuple('DecryptResult', ['path', 'ok'])
+
+# Feature Flags
+ARCHIVE = os.environ.get('ARCHIVE', default=False)
+ERROR = os.environ.get('ERROR', default=False)
 
 
 # deletes the contents of a local folder and recreates it
@@ -58,29 +61,28 @@ def trim_path_to_filename(path):
 
 
 def trim_path_to_directory(path):
-    if path.rfind('/') != -1:
-        path = path[0:path.rfind('/') + 1]
-    return path
+    return os.path.dirname(path)
 
 
 # Store file in error directory on s3
 def error_on_s3(bucket, key):
-    move_on_s3('error/', bucket, key)
+    if ERROR:
+        move_on_s3('error/', bucket, key)
 
 
 def move_on_s3(dest_folder, bucket, key):
     download_filename = trim_path_to_filename(key)
     new_key = join(dest_folder, download_filename)
     logger.info('move original file to ' + new_key)
-    s3.Object(bucket, new_key).copy_from(CopySource='{0}/{1}'.format(bucket, key))
+    S3.Object(bucket, new_key).copy_from(CopySource='{0}/{1}'.format(bucket, key))
     logger.info('deleting original upload file')
-    s3.Object(bucket, key).delete()
+    S3.Object(bucket, key).delete()
 
 
 def download_file(bucket, download_path, key):
     logger.info('downloading s3://{0}/{1} to {2}'.format(bucket, key, download_path))
     try:
-        s3.meta.client.download_file(bucket, key, download_path)
+        S3.meta.client.download_file(bucket, key, download_path)
         exists = True
     except ClientError as e:
         error_code = int(e.response['Error']['Code'])
@@ -96,12 +98,12 @@ def download_file(bucket, download_path, key):
 
 # download the private encryption key from s3
 def download_asc():
-    asc_dir = trim_path_to_directory(asc_local_path)
+    asc_dir = trim_path_to_directory(ASC_LOCAL_PATH)
     if not os.path.exists(asc_dir):
         mkdir(asc_dir)
     logger.info('Attempting to download key from s3://{}/{}'.format(PGP_KEY_S3_BUCKET, ASC_REMOTE_KEY))
-    local_key = join(asc_local_path, ASC_REMOTE_KEY)
-    s3.meta.client.download_file(PGP_KEY_S3_BUCKET, ASC_REMOTE_KEY, local_key)
+    local_key = join(ASC_LOCAL_PATH, ASC_REMOTE_KEY)
+    S3.meta.client.download_file(PGP_KEY_S3_BUCKET, ASC_REMOTE_KEY, local_key)
     key_data = open(local_key).read()
     # Disable logging of key data while importing the key
     level = logger.level
@@ -115,7 +117,7 @@ def decrypt(source_filepath):
     actions_taken.append('DECRYPTED')
     with open(source_filepath, 'rb') as f:
         source_filename = trim_path_to_filename(source_filepath)
-        decrypt_path = join(decrypt_dir, re.sub(r'\.(pgp|gpg)$', '', source_filename))
+        decrypt_path = join(DECRYPT_DIR, re.sub(r'\.(pgp|gpg)$', '', source_filename))
         logger.info('Decrypting to {}'.format(decrypt_path))
         data = gpg.decrypt_file(f, always_trust=True, output=decrypt_path)
         logger.info('Decrypt status: {}'.format(data.status))
@@ -126,7 +128,7 @@ def sort_local_file(file_path, processed_dir):
     logger.info(f'local sorting: {file_path}')
     destination = join(processed_dir, trim_path_to_filename(file_path))
     if file_path.endswith('.zip') or file_path.endswith('.pgp') or file_path.endswith('.gpg'):
-        destination = join(download_dir, trim_path_to_filename(file_path))
+        destination = join(DOWNLOAD_DIR, trim_path_to_filename(file_path))
     logger.info(f'local sorting {file_path} to {destination}')
     os.rename(file_path, destination)
 
@@ -144,9 +146,9 @@ def unzip(source_filename, dest_dir):
 
 
 def process_files():
-    while listdir(download_dir):
-        for f in listdir(download_dir):
-            file_path = join(download_dir, f)
+    while listdir(DOWNLOAD_DIR):
+        for f in listdir(DOWNLOAD_DIR):
+            file_path = join(DOWNLOAD_DIR, f)
             if f.endswith('.pgp') or f.endswith('.gpg'):
                 download_asc()
                 logger.info('Decrypting {}'.format(file_path))
@@ -155,30 +157,32 @@ def process_files():
                     raise EnvironmentError('Decryption failed. Do you have the right key?')
                 else:
                     os.remove(file_path)
-                    sort_local_files(trim_path_to_directory(decrypted.path), download_dir)
+                    sort_local_files(trim_path_to_directory(decrypted.path), DOWNLOAD_DIR)
 
             elif f.endswith('.zip'):
                 # process zip file
                 logger.info('Unzipping {}'.format(file_path))
-                unzip(file_path, local_unzipped_dir)
+                unzip(file_path, LOCAL_UNZIPPED_DIR)
                 os.remove(file_path)
-                sort_local_files(local_unzipped_dir, download_dir)
+                sort_local_files(LOCAL_UNZIPPED_DIR, DOWNLOAD_DIR)
             else:
-                sort_local_files(download_dir, local_ready_dir)
+                sort_local_files(DOWNLOAD_DIR, LOCAL_READY_DIR)
 
 
-def copy_files(copy_source_dir, bucket):
+def copy_files(copy_source_dir, bucket, prefix):
     for f in listdir(copy_source_dir):
         file_path = join(copy_source_dir, f)
         if isfile(file_path):
+            upload_path = join(prefix, f)
             logger.info('Processing: ' + file_path)
-            logger.info('Uploading: {} to {}'.format(file_path, f))
-            s3.meta.client.upload_file(file_path, bucket, f)
+            logger.info('Uploading: {} to {}'.format(file_path, upload_path))
+            S3.meta.client.upload_file(file_path, bucket, upload_path)
 
 
 # Archive and delete the file in the s3 bucket
 def archive_on_s3(bucket, key):
-    move_on_s3('archive/', bucket, key)
+    if ARCHIVE:
+        move_on_s3('archive/', bucket, key)
 
 
 def move_on_s3(dest_folder, bucket, key):
@@ -186,9 +190,9 @@ def move_on_s3(dest_folder, bucket, key):
     download_filename = trim_path_to_filename(key)
     new_key = join(dest_folder, download_filename)
     logger.info('move original file to ' + new_key)
-    s3.Object(bucket, new_key).copy_from(CopySource='{}/{}'.format(bucket, key))
+    S3.Object(bucket, new_key).copy_from(CopySource='{}/{}'.format(bucket, key))
     logger.info('deleting original upload file')
-    s3.Object(bucket, key).delete()
+    S3.Object(bucket, key).delete()
 
 
 def lambda_handler(event, context):
@@ -200,26 +204,33 @@ def lambda_handler(event, context):
         prefix = trim_path_to_directory(key)
         download_filename = trim_path_to_filename(key)
 
-        if prefix == 'archive/':
+        if not key.endswith(('.pgp', '.gpg')):
+            logger.info('File {key} is not an encrypted file... Skipping'.format(key=key))
+            continue
+
+        if ARCHIVE and prefix == 'archive':
             logger.debug('Archive event triggered... Skipping')
             continue
-        elif prefix == 'error/':
+        elif ERROR and prefix == 'error':
             logger.debug('Error event triggered... Skipping')
             continue
 
         try:
-            reset_folder(download_dir)
-            reset_folder(decrypt_dir)
-            reset_folder(local_unzipped_dir)
-            reset_folder(local_ready_dir)
+            reset_folder(DOWNLOAD_DIR)
+            reset_folder(DECRYPT_DIR)
+            reset_folder(LOCAL_UNZIPPED_DIR)
+            reset_folder(LOCAL_READY_DIR)
 
             logger.info('Begin Processing s3://{0}/{1}'.format(bucket, key))
 
             if not download_filename:
                 logger.info('Skipping processing of folder {0}'.format(key))
                 continue
+            elif int(record['s3']['object']['size']) == 0:
+                logger.info('File {key} is a placeholder file... Skipping'.format(key=key))
+                continue
 
-            download_path = join(download_dir, download_filename)
+            download_path = join(DOWNLOAD_DIR, download_filename)
 
             file_exists = download_file(bucket, download_path, key)
 
@@ -229,7 +240,7 @@ def lambda_handler(event, context):
 
                 # copy ready files to s3 ready bucket
                 logger.info('Uploading files')
-                copy_files(local_ready_dir, DECRYPTED_DONE_BUCKET)
+                copy_files(LOCAL_READY_DIR, DECRYPTED_DONE_BUCKET, prefix)
                 archive_on_s3(bucket, key)
         except Exception:
             exc_type, exc_value, exc_traceback = sys.exc_info()
@@ -242,4 +253,5 @@ def lambda_handler(event, context):
             logger.error(message)
             error_on_s3(bucket, key)
             return 'failure.'
+
     return 'success.'
