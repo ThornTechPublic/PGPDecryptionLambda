@@ -1,10 +1,11 @@
 import argparse
-import boto3
 import os
+
+import boto3
 
 # Global variables
 PROJECT = 'pgp-file-decrypter'
-BUCKET = 'pgp-lambda-code'
+BUCKET = 'pgp-lambda-deploy'
 
 
 def create_deployment_bucket(bucket, profile):
@@ -28,16 +29,17 @@ def package(bucket, profile):
         --profile {profile}'.format(bucket=bucket, profile=profile)
               )
 
-
-def deploy(project, profile):
+def deploy(project, profile, params):
     # the actual deployment step
     os.system('sam deploy                         \
         --template-file build/output.yaml         \
         --stack-name {project}                    \
         --capabilities CAPABILITY_NAMED_IAM       \
-        --profile {profile}'.format(
+        --profile {profile}                       \
+        --parameter-overrides {params}'.format(
         project=project,
         profile=profile,
+        params=' '.join(params)
     )
     )
 
@@ -52,24 +54,43 @@ def parse_args(args=None):
         type=str,
         default='default'
     )
+    parser.add_argument(
+        '--deploy-bucket',
+        '-d',
+        help='Specify S3 bucket to user for SAM deployment',
+        type=str,
+        default=BUCKET
+    )
+    parser.add_argument(
+        '--template-params',
+        '-t',
+        help='List template parameters as \
+        `PgpKeyLocation=value PgpKeyName=value DecryptedTargetBucket=value EncryptedSourceBucket=value`',
+        nargs='+',
+        type=str,
+        action='extend'
+    )
     return parser.parse_args(args)
 
 
 def clean_build(target):
-    for d in os.listdir(target):
-        try:
-            clean_build('{}/{}'.format(target, d))
-        except OSError:
-            os.remove('{}/{}'.format(target, d))
-    os.rmdir(target)
+    if os.path.exists(target):
+        for d in os.listdir(target):
+            try:
+                clean_build('{}/{}'.format(target, d))
+            except OSError:
+                os.remove('{}/{}'.format(target, d))
+        os.rmdir(target)
 
 
 def main(args=None):
     args = parse_args(args)
     profile = args.profile
+    bucket = args.deploy_bucket
+    params = args.template_params
 
     # Create the deployment bucket if it does not exist
-    create_deployment_bucket(BUCKET, profile)
+    create_deployment_bucket(bucket, profile)
 
     # Clean and recreate the build directory
     clean_build('build')
@@ -84,7 +105,7 @@ def main(args=None):
     print('Packaging complete...')
 
     print('Deploying...')
-    deploy(PROJECT, profile)
+    deploy(PROJECT, profile, params)
     print('Deployment complete.')
 
 
