@@ -9,9 +9,9 @@ BUCKET = 'pgp-lambda-deploy'
 
 
 def create_deployment_bucket(bucket, profile):
-    session = boto3.Session(profile_name=profile)
+    session = boto3.Session(profile_name=profile, region_name="us-west-2")
     s3 = session.client('s3')
-    response = s3.create_bucket(Bucket=bucket)
+    response = s3.create_bucket(Bucket=bucket, CreateBucketConfiguration={'LocationConstraint': 'us-west-2'})
     return response
 
 
