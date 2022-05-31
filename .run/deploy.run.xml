@@ -1,12 +1,12 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="deploy" type="PythonConfigurationType" factoryName="Python" nameIsGenerated="true">
-    <module name="pgplambda" />
+    <module name="sftpgw-pgp-lambda" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>
       <env name="PYTHONUNBUFFERED" value="1" />
     </envs>
-    <option name="SDK_HOME" value="$USER_HOME$/.local/share/virtualenvs/pgplambda-mj7BtuHV/bin/python" />
+    <option name="SDK_HOME" value="$USER_HOME$/.local/share/virtualenvs/sftpgw-pgp-lambda-K1fyJ2Vm/bin/python" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
     <option name="IS_MODULE_SDK" value="true" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
@@ -18,7 +18,7 @@
       <option name="useCurrentConnection" value="false" />
     </EXTENSION>
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/deploy.py" />
-    <option name="PARAMETERS" value="-t DecryptedTargetBucket=chris-sftpgw-pgp-done EncryptedSourceBucket=chris-sftpgw-pgp-encrypted PgpKeyLocation=chris-pgp-keys PgpKeyName=chris.asc" />
+    <option name="PARAMETERS" value="-p pro-asset -d thorntech-pgp-lambda-deploy -t DecryptedTargetBucket=thorntech-sftpgw-pgp-done EncryptedSourceBucket=thorntech-sftpgw-pgp-encrypted PgpKeyLocation=thorntech-pgp-keys PgpKeyName=thorntech-key.asc" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />
