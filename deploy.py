@@ -101,7 +101,7 @@ def main(args=None):
     print('Build complete...')
 
     print('Packaging...')
-    package(BUCKET, profile)
+    package(bucket, profile)
     print('Packaging complete...')
 
     print('Deploying...')
