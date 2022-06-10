@@ -45,6 +45,10 @@ Resources:
                 - !Sub "arn:aws:s3:::${PgpKeyLocation}/*"
       Environment:
         Variables:
+          PGP_PASSPHRASE:
+            Type: String
+            Description: "(Optional) Set PGP Key passphrase if applicable "
+            Default: None
           PGP_KEY_LOCATION:
             Ref: PgpKeyLocation
           PGP_KEY_NAME:
