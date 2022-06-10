@@ -1,0 +1,12 @@
+{
+  "scriptFile": "azure_handler.py",
+  "entryPoint": "invoke",
+  "bindings": [
+    {
+      "type": "eventGridTrigger",
+      "name": "event",
+      "direction": "in"
+    }
+  ],
+  "disabled": false
+}
