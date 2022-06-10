@@ -13,6 +13,9 @@ Parameters:
   EncryptedSourceBucket:
     Type: String
     Description: "S3 Bucket that triggers lambda to decrypt files. Needed for permissions"
+  PgpPassphrase:
+    Type: String
+    Description: "PGP Passphrase"
 Resources:
   PgpLambda:
     Type: AWS::Serverless::Function
@@ -46,9 +49,7 @@ Resources:
       Environment:
         Variables:
           PGP_PASSPHRASE:
-            Type: String
-            Description: "(Optional) Set PGP Key passphrase if applicable "
-            Default: None
+            Ref: PgpPassphrase
           PGP_KEY_LOCATION:
             Ref: PgpKeyLocation
           PGP_KEY_NAME:

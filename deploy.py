@@ -90,7 +90,8 @@ def main(args=None):
     params = args.template_params
 
     # Create the deployment bucket if it does not exist
-    create_deployment_bucket(bucket, profile)
+    # Comment this out for repeat deployments, uncomment for first deploy
+    # create_deployment_bucket(bucket, profile)
 
     # Clean and recreate the build directory
     clean_build('build')
