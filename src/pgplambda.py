@@ -28,6 +28,7 @@ asc_key_downloaded_for_client = ''
 PGP_KEY_S3_BUCKET = os.environ.get('PGP_KEY_LOCATION')
 ASC_REMOTE_KEY = os.environ.get('PGP_KEY_NAME')
 DECRYPTED_DONE_BUCKET = os.environ.get('DECRYPTED_DONE_BUCKET')
+PASSPHRASE = os.environ.get('PGP_PASSPHRASE')
 
 # Directories
 DOWNLOAD_DIR = '/tmp/downloads/'
@@ -119,7 +120,7 @@ def decrypt(source_filepath):
         source_filename = trim_path_to_filename(source_filepath)
         decrypt_path = join(DECRYPT_DIR, re.sub(r'\.(pgp|gpg)$', '', source_filename))
         logger.info('Decrypting to {}'.format(decrypt_path))
-        data = gpg.decrypt_file(f, always_trust=True, output=decrypt_path)
+        data = gpg.decrypt_file(f, always_trust=True, output=decrypt_path, passphrase=PASSPHRASE)
         logger.info('Decrypt status: {}'.format(data.status))
         return decrypt_result(decrypt_path, data.ok)
 
