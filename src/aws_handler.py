@@ -1,7 +1,6 @@
 from sharedconstants import *
 from pgplambda import process_files
 
-import logging
 import os
 import sys
 import traceback
