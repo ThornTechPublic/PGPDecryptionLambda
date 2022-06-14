@@ -1,7 +1,6 @@
 from sharedconstants import *
 from pgplambda import process_files
 
-import logging
 import os
 import sys
 import traceback
@@ -16,14 +15,15 @@ credentials = azure.identity.DefaultAzureCredential()
 # TODO test (normal, multiple files, files in folders, key in folders, zip folders, nested zip folders)
 # TODO replace s3's with azure at end (comments and strings too)
 
-def move_on_az(dest_folder, bucket, key):
-    # TODO translate
-    download_filename = trim_path_to_filename(key)
-    new_key = join(dest_folder, download_filename)
-    logger.info('move original file to ' + new_key)
-    S3.Object(bucket, new_key).copy_from(CopySource='{0}/{1}'.format(bucket, key))
-    logger.info('deleting original upload file')
-    S3.Object(bucket, key).delete()
+
+def move_on_az(dest_container, account_url, container, filepath):
+    dest_blob_obj = azure.storage.blob.BlobClient(account_url, dest_container, filepath, credentials=credentials)
+    source_url = '/'.join([account_url, container, filepath])
+    logger.info(f'moving original file to {dest_container} container')
+    dest_blob_obj.start_copy_from_url(source_url, requires_sync=True)
+    source_blob_obj = azure.storage.blob.BlobClient.from_blob_url(source_url, credential=credentials)
+    logger.info('deleting original upload blob')
+    source_blob_obj.delete_blob()
 
 
 def download_file_on_az(url: str, download_path=None):
@@ -71,26 +71,23 @@ def copy_files_on_az(copy_source_dir: str, account_url: str, container: str, pre
                                               credential=credentials).upload_blob(file)
 
 
-# Filepath here is the full path including folders and the filename (and extension) of the remote file
 # Store file in error directory
-def error_on_az(bucket, filepath):
-    # TODO translate
+def error_on_az(account_url, container, filepath):
     if ERROR:
-        move_on_az('error/', bucket, filepath)
+        move_on_az('error', account_url, container, filepath)
 
 
 # Archive and delete the file
-def archive_on_az(bucket, filepath):
-    # TODO translate
+def archive_on_az(account_url, container, filepath):
     if ARCHIVE:
-        move_on_az('archive/', bucket, filepath)
+        move_on_az('archive', account_url, container, filepath)
 
 
 def invoke(event: azure.functions.EventGridEvent):
     print(event.get_json())
     url = event.get_json()["data"]["url"]
     #url = parse.unquote_plus(url)
-    account_url = url.rsplit('/', url.count('/')-2)
+    account_url = url.rsplit('/', url.count('/')-2)[0]
     blob_obj = azure.storage.blob.BlobClient.from_blob_url(url, credentials)
     container_name = blob_obj.container_name
     filepath = blob_obj.blob_name
@@ -126,17 +123,13 @@ def invoke(event: azure.functions.EventGridEvent):
                 # copy ready files to s3 ready bucket
                 logger.info('Uploading files')
                 copy_files_on_az(LOCAL_READY_DIR, account_url, DECRYPTED_DONE_LOCATION, prefix)
-                # TODO Finish method below
-                archive_on_az(bucket, key)
+                archive_on_az(account_url, container_name, filepath)
         except Exception:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
-            message = 'Unexpected error while processing upload s3://{bucket}/{key}, with message \"{message}\". The file ' \
-                      'has been moved to the error folder. ' \
-                      'Stack trace follows: {trace}'.format(message=exc_value, bucket=bucket, key=key,
-                                                            trace=''.join('!! '
-                                                                          + line for line in lines))
+            message = f'Unexpected error while processing upload {account_url}/{container_name}/{filepath}, with message \"{exc_value}\". \
+                      The file has been moved to the error folder. Stack trace follows: {"".join("!! " + line for line in lines)}'
             logger.error(message)
-            error_on_az(bucket, key)
+            error_on_az(account_url, container_name, filepath)
             return 'failure.'
     return 'success.'

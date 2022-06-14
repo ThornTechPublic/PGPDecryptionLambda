@@ -13,6 +13,9 @@ logger.info('Loading function')
 PGP_KEY_LOCATION = os.environ.get('PGP_KEY_LOCATION')
 ASC_REMOTE_KEY = os.environ.get('PGP_KEY_NAME')
 DECRYPTED_DONE_LOCATION = os.environ.get('DECRYPTED_DONE_LOCATION')
+PASSPHRASE = os.environ.get("PGP_PASSPHRASE", None)
+if PASSPHRASE == "":
+    PASSPHRASE = None
 
 # Directories
 DOWNLOAD_DIR = '/tmp/downloads/'

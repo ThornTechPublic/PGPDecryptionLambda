@@ -10,7 +10,7 @@ def decrypt(source_filepath):
         source_filename = trim_path_to_filename(source_filepath)
         decrypt_path = join(DECRYPT_DIR, re.sub(r'\.(pgp|gpg)$', '', source_filename))
         logger.info('Decrypting to {}'.format(decrypt_path))
-        data = gpg.decrypt_file(f, always_trust=True, output=decrypt_path)
+        data = gpg.decrypt_file(f, always_trust=True, output=decrypt_path, passphrase=PASSPHRASE)
         logger.info('Decrypt status: {}'.format(data.status))
         return decrypt_result(decrypt_path, data.ok)
 
