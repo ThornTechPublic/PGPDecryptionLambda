@@ -5,7 +5,7 @@
       "name": "myblob",
       "type": "blobTrigger",
       "direction": "in",
-      "path": "chris-pgp-test/{name}",
+      "path": "%ENCRYPTED_SOURCE_BUCKET%/{name}"
     }
   ]
 }
