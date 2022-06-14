@@ -113,23 +113,48 @@ Using the SAM CLI deploy the template.yaml file.
 
 ```yaml
 PgpKeyLocation:
-  Type: String
-  Description: "S3 bucket where the PGP private key is located"
+    Type: String
+    Description: "S3 bucket where the PGP private key is located"
 PgpKeyName:
-  Type: String
-  Description: "Name of the PGP private key"
+    Type: String
+    Description: "Name of the PGP private key"
 DecryptedTargetBucket:
-  Type: String
-  Description: "S3 Bucket where files will land lambda decryption"
+    Type: String
+    Description: "S3 Bucket where files will land lambda decryption"
 EncryptedSourceBucket:
-  Type: String
-  Description: "S3 Bucket that triggers lambda to decrypt files. Needed for permissions"
+    Type: String
+    Description: "S3 Bucket that triggers lambda to decrypt files. Needed for permissions"
 ```
 
 ### Lambda Environment Variables
 
 ```yaml
-LOG_LEVEL: [ CRITICAL, ERROR, WARNING, INFO, DEBUG, NOTSET ]
+LOG_LEVEL:
+    Allowed Values: [ CRITICAL | ERROR | WARNING | INFO | DEBUG | NOTSET ]
+    Description: "Set log level if desired."
+    Default: INFO
+    Type: String
+PGP_PASSPHRASE:
+    Type: String 
+    Description: "(Optional) Set PGP Key passphrase if applicable "
+    Default: None
+PGP_KEY_LOCATION:
+    Type: String
+    Description: "S3 bucket where the PGP private key is located"
+PGP_KEY_NAME:
+    Type: String
+    Description: "Name of the PGP private key"
+DECRYPTED_DONE_BUCKET:
+    Type: String
+    Description: "S3 Bucket where files will land lambda decryption"
+ARCHIVE:
+    Type: Boolean
+    Default: false
+    Descritption: "If true, files that have already been decrypted will be moved into an archive folder in the source bucket"
+ERROR:
+    Type: Boolean
+    Default: false
+    Descritption: "If true, files that encounter an error will decrypting will be moved into an error folder in the source bucket"
 ```
 
 ## Bucket setup
