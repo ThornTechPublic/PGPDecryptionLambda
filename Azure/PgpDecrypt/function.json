@@ -1,8 +1,9 @@
 {
-  "scriptFile": "__init__.py",
+  "scriptFile": "azure_handler.py",
+  "entryPoint": "invoke",
   "bindings": [
     {
-      "name": "myblob",
+      "name": "event",
       "type": "blobTrigger",
       "direction": "in",
       "path": "%ENCRYPTED_SOURCE_BUCKET%/{name}"

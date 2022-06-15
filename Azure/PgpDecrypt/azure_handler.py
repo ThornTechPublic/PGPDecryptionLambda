@@ -1,5 +1,5 @@
-from sharedconstants import *
-from pgplambda import process_files
+from res.sharedconstants import *
+from res.pgpDecrypt import process_files
 
 import os
 import sys
@@ -83,10 +83,10 @@ def archive_on_az(account_url, container, filepath):
         move_on_az('archive', account_url, container, filepath)
 
 
-def invoke(event: azure.functions.EventGridEvent):
-    print(event.get_json())
-    url = event.get_json()["data"]["url"]
-    #url = parse.unquote_plus(url)
+def invoke(event: azure.functions.InputStream):
+    logger.info(f"New event: {event}")
+    url = event.uri
+    url = parse.unquote_plus(url)
     account_url = url.rsplit('/', url.count('/')-2)[0]
     blob_obj = azure.storage.blob.BlobClient.from_blob_url(url, credentials)
     container_name = blob_obj.container_name
