@@ -6,6 +6,7 @@ from os.path import join
 
 
 def decrypt(source_filepath):
+    logger.info(os.stat(source_filepath))
     with open(source_filepath, 'rb') as f:
         source_filename = trim_path_to_filename(source_filepath)
         decrypt_path = join(DECRYPT_DIR, re.sub(r'\.(pgp|gpg)$', '', source_filename))

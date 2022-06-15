@@ -16,6 +16,7 @@ DECRYPTED_DONE_LOCATION = os.environ.get('DECRYPTED_DONE_LOCATION')
 PASSPHRASE = os.environ.get("PGP_PASSPHRASE", None)
 if PASSPHRASE == "":
     PASSPHRASE = None
+CONNECTION_STRING = os.environ.get("AZURE_STORAGE_CONNECTION_STRING")
 
 # Directories
 DOWNLOAD_DIR = '/tmp/downloads/'
