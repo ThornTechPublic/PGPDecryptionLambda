@@ -1,4 +1,4 @@
-from sharedconstants import *
+from res.sharedconstants import *
 import os
 import re
 import zipfile

@@ -1,5 +1,5 @@
 from sharedconstants import *
-from pgplambda import process_files
+from pgpDecrypt import process_files
 
 import os
 import sys
