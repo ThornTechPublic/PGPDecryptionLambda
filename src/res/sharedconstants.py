@@ -3,6 +3,7 @@ import shutil
 import os
 import collections
 import gnupg
+import random
 
 # Logger
 logger = logging.getLogger()
@@ -11,11 +12,20 @@ logger.info('Loading function')
 
 
 # deletes the contents of a local folder and recreates it
-def reset_folder(local_path):
-    logger.debug('deleting local contents of {}'.format(local_path))
+def create_folder_if_not_exists(local_path: str):
+    if not os.path.exists(local_path):
+        os.mkdir(local_path)
+
+
+def reset_folder(local_path: str):
     if os.path.exists(local_path):
         shutil.rmtree(local_path)
     os.mkdir(local_path)
+
+
+def randomize_filename(filepath: str):
+    num = random.randint(10000000, 100000000)
+    return str(num).join(os.path.splitext(filepath))
 
 
 # Global variables

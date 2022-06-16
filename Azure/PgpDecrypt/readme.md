@@ -41,3 +41,8 @@ For a `BlobTrigger` to work, you provide a path which dictates where the blobs a
   * You can click on Code + Test to see the contents of some code files (but not change them)
   * You can click on integration to see the trigger of this function (that info comes from function.json)
 * Note that functions from images cannot be edited in the Azure portal so all changes will have to be made on your local machine then pushed to docker hub
+
+## Other Notes
+
+* On Azure, each file uploaded is run in its own function for the BlobTrigger.
+  * However, these may be on the same machine instance so the code must be essentially race-free for OS functions
