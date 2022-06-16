@@ -1,21 +1,22 @@
 from res.sharedconstants import *
-from res.pgpDecrypt import process_files
+from res.pgpDecrypt import process_file
 
 import os
 import sys
 import traceback
 from os.path import join, isfile
 from urllib import parse
+import re
 
 import azure.storage.blob
 import azure.functions
 import azure.identity
 
-# TODO test (normal, multiple files, files in folders, key in folders, zip folders, nested zip folders)
-# TODO replace s3's with azure at end (comments and strings too)
 
-
-def move_on_az(dest_container, account_url, container, filepath):
+# Fails if blob should not be in the account url or if the account name contains a ;
+def move_on_az(dest_container: str, container: str, filepath: str):
+    regex_result = re.match("AccountName=(.+?);", CONNECTION_STRING)
+    account_url = f"https://{regex_result.group(1)}.blob.core.windows.net"
     dest_blob_obj = azure.storage.blob.BlobClient.from_connection_string(CONNECTION_STRING, dest_container, filepath)
     source_url = '/'.join([account_url, container, filepath])
     logger.info(f'moving original file to {dest_container} container')
@@ -25,23 +26,13 @@ def move_on_az(dest_container, account_url, container, filepath):
     source_blob_obj.delete_blob()
 
 
-def download_file_on_az(container: str, filepath: str):
-    blob_obj = azure.storage.blob.BlobClient.from_connection_string(CONNECTION_STRING, container, filepath)
-    logger.info(f'downloading to {filepath}')
-    # try:
-    with open(join(DOWNLOAD_DIR, filepath), "wb") as f:
+def download_file_on_az(container: str, remote_filepath: str):
+    blob_obj = azure.storage.blob.BlobClient.from_connection_string(CONNECTION_STRING, container, remote_filepath)
+    download_filepath = join(DOWNLOAD_DIR, randomize_filename(trim_path_to_filename(remote_filepath)))
+    logger.info(f'downloading to {download_filepath}')
+    with open(download_filepath, "wb") as f:
         blob_obj.download_blob().readinto(f)
-    exists = True
-    # except ClientError as e:
-    #     error_code = int(e.response['Error']['Code'])
-    #     if error_code == 404:
-    #         exists = False
-    #         logger.warning(
-    #             'attempt to download s3://{0}/{1} failed, it was not found. Most likely file was already processed.'.format(
-    #                 bucket, key))
-    #     else:
-    #         raise e
-    return exists
+    return download_filepath
 
 
 # download the private encryption key from azure
@@ -51,31 +42,27 @@ def download_asc_on_az():
     # Disable logging of key data while importing the key
     key_data = blob_obj.download_blob().readall()
     if isinstance(key_data, bytes):
-        logger.warn("Alert: Key data returned as bytes! Decoding now...")
         key_data = key_data.decode("UTF-8")
     import_result = gpg.import_keys(key_data)
     logger.info('key import result fingerprint: {}'.format(', '.join(import_result.fingerprints)))
 
 
-def copy_files_on_az(copy_source_dir: str, container: str, prefix: str):
-    for f in os.listdir(copy_source_dir):
-        local_filepath = join(copy_source_dir, f)
-        if isfile(local_filepath):
-            remote_filepath = join(prefix, f)
-            logger.info(f'Uploading: {local_filepath} to {remote_filepath}')
-            with open(local_filepath, "rb") as file:
-                azure.storage.blob.BlobClient.from_connection_string(CONNECTION_STRING, container,
-                                                                     remote_filepath).upload_blob(file)
+def copy_file_on_az(local_filepath: str, container: str, remote_filepath: str):
+    if isfile(local_filepath):
+        logger.info(f'Uploading: {local_filepath} to {remote_filepath}')
+        with open(local_filepath, "rb") as f:
+            azure.storage.blob.BlobClient.from_connection_string(CONNECTION_STRING,
+                                                                 container, remote_filepath).upload_blob(f)
 
 
 # Store file in error directory
-def error_on_az(container, filepath):
+def error_on_az(container: str, filepath: str):
     if ERROR:
         move_on_az('error', container, filepath)
 
 
 # Archive and delete the file
-def archive_on_az(container, filepath):
+def archive_on_az(container: str, filepath: str):
     if ARCHIVE:
         move_on_az('archive', container, filepath)
 
@@ -86,43 +73,36 @@ def invoke(event: azure.functions.InputStream):
     url = parse.unquote_plus(url)
     blob_obj = azure.storage.blob.BlobClient.from_blob_url(url)
     container_name = blob_obj.container_name
-    filepath = blob_obj.blob_name
-    logger.debug(f'Azure Event: {container_name}/{filepath} was uploaded')
-    prefix = trim_path_to_directory(filepath)
+    remote_filepath = blob_obj.blob_name
+    logger.debug(f'Azure Event: {container_name}/{remote_filepath} was uploaded')
 
-    if not filepath.endswith(('.pgp', '.gpg')):
-        logger.info(f'File {filepath} is not an encrypted file... Skipping')
-    elif ARCHIVE and prefix.startswith('archive'):
+    if not remote_filepath.endswith(('.pgp', '.gpg', '.zip')):
+        logger.info(f'File {remote_filepath} is not an encrypted file... Skipping')
+    elif ARCHIVE and remote_filepath.startswith('archive/'):
         logger.debug('Archive event triggered... Skipping')
-    elif ERROR and prefix.startswith('error'):
+    elif ERROR and remote_filepath.startswith('error/'):
         logger.debug('Error event triggered... Skipping')
     else:
         try:
-            reset_folder(DOWNLOAD_DIR)
-            reset_folder(DECRYPT_DIR)
-            reset_folder(LOCAL_UNZIPPED_DIR)
-            reset_folder(LOCAL_READY_DIR)
+            create_folder_if_not_exists(DOWNLOAD_DIR)
+            create_folder_if_not_exists(DECRYPT_DIR)
+            create_folder_if_not_exists(LOCAL_UNZIPPED_DIR)
+            create_folder_if_not_exists(LOCAL_READY_DIR)
             logger.info(f'Begin Processing {url}')
 
-            # TODO figure out equivalent
-            # if int(record['s3']['object']['size']) == 0:
-            #     logger.info('File {key} is a placeholder file... Skipping'.format(key=key))
-            #     continue
-
-            file_exists = download_file_on_az(container_name, filepath)
-
-            if file_exists:
-                download_asc_on_az()
-                # process until download_dir is empty
-                process_files()
-                # copy ready files to s3 ready bucket
-                logger.info('Uploading files')
-                copy_files_on_az(LOCAL_READY_DIR, DECRYPTED_DONE_LOCATION, prefix)
-                archive_on_az(container_name, filepath)
+            local_filepath = download_file_on_az(container_name, remote_filepath)
+            download_asc_on_az()
+            local_filepath = process_file(local_filepath)
+            # copy file to azure container
+            logger.info(f'Uploading file {local_filepath}')
+            dest_remote_filepath = os.path.splitext(remote_filepath)[0]
+            copy_file_on_az(local_filepath, DECRYPTED_DONE_LOCATION, dest_remote_filepath)
+            archive_on_az(container_name, remote_filepath)
+            os.remove(local_filepath)
         except Exception:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
-            message = f'Unexpected error while processing upload {container_name}/{filepath}, with message \"{exc_value}\". \
+            message = f'Unexpected error while processing upload {container_name}/{remote_filepath}, with message \"{exc_value}\". \
                       The file has been moved to the error folder. Stack trace follows: {"".join("!! " + line for line in lines)}'
             logger.error(message)
-            error_on_az(container_name, filepath)
+            error_on_az(container_name, remote_filepath)
