@@ -47,7 +47,10 @@ def process_files():
                 if not decrypted.ok:
                     raise EnvironmentError('Decryption failed. Do you have the right key?')
                 else:
-                    os.remove(file_path)
+                    try:
+                        os.remove(file_path)
+                    except FileNotFoundError:
+                        logger.info(f"{file_path} already deleted")
                     sort_local_files(trim_path_to_directory(decrypted.path), DOWNLOAD_DIR)
             elif f.endswith('.zip'):
                 # process zip file
