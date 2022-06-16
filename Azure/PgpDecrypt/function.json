@@ -6,7 +6,8 @@
       "name": "event",
       "type": "blobTrigger",
       "direction": "in",
-      "path": "%ENCRYPTED_SOURCE_BUCKET%/{name}"
+      "path": "%ENCRYPTED_SOURCE_BUCKET%/{name}",
+      "connection": "AZURE_STORAGE_CONNECTION_STRING"
     }
   ]
 }
