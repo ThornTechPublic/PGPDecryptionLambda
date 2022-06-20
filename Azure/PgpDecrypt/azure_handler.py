@@ -84,10 +84,6 @@ def invoke(event: azure.functions.InputStream):
         logger.debug('Error event triggered... Skipping')
     else:
         try:
-            create_folder_if_not_exists(DOWNLOAD_DIR)
-            create_folder_if_not_exists(DECRYPT_DIR)
-            create_folder_if_not_exists(LOCAL_UNZIPPED_DIR)
-            create_folder_if_not_exists(LOCAL_READY_DIR)
             logger.info(f'Begin Processing {url}')
 
             local_filepath = download_file_on_az(container_name, remote_filepath)

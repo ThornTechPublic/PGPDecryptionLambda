@@ -10,5 +10,7 @@ RUN cd Python-3.9.6 && \
     make altinstall
 RUN python3.9 --version \
     python3.9 -m pip install --upgrade pip && \
-    python3.9 -m pip install virtualenv
-
+    python3.9 -m pip install pipenv
+COPY src /var/task
+RUN pipenv install -r /var/task/requirements.txt
+CMD ["/var/task/aws_handler.invoke"]
