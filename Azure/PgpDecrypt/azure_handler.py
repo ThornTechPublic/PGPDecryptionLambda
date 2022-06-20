@@ -14,12 +14,13 @@ import azure.identity
 
 
 # Fails if blob should not be in the account url or if the account name contains a ;
-def move_on_az(dest_container: str, container: str, filepath: str):
+def move_on_az(dest_folder: str, container: str, filepath: str):
     regex_result = re.match("AccountName=(.+?);", CONNECTION_STRING)
     account_url = f"https://{regex_result.group(1)}.blob.core.windows.net"
-    dest_blob_obj = azure.storage.blob.BlobClient.from_connection_string(CONNECTION_STRING, dest_container, filepath)
+    dest_blob_obj = azure.storage.blob.BlobClient.from_connection_string(CONNECTION_STRING,
+                                                                         container, join(dest_folder, filepath))
     source_url = '/'.join([account_url, container, filepath])
-    logger.info(f'moving original file to {dest_container} container')
+    logger.info(f'moving original file to {dest_folder} folder')
     dest_blob_obj.start_copy_from_url(source_url, requires_sync=True)
     source_blob_obj = azure.storage.blob.BlobClient.from_connection_string(CONNECTION_STRING, container, filepath)
     logger.info('deleting original upload blob')
@@ -44,7 +45,7 @@ def download_asc_on_az():
     if isinstance(key_data, bytes):
         key_data = key_data.decode("UTF-8")
     import_result = gpg.import_keys(key_data)
-    logger.info('key import result fingerprint: {}'.format(', '.join(import_result.fingerprints)))
+    logger.info(f'key import result fingerprint: {", ".join(import_result.fingerprints)}')
 
 
 def copy_file_on_az(local_filepath: str, container: str, remote_filepath: str):
@@ -58,13 +59,13 @@ def copy_file_on_az(local_filepath: str, container: str, remote_filepath: str):
 # Store file in error directory
 def error_on_az(container: str, filepath: str):
     if ERROR:
-        move_on_az('error', container, filepath)
+        move_on_az('error/', container, filepath)
 
 
 # Archive and delete the file
 def archive_on_az(container: str, filepath: str):
     if ARCHIVE:
-        move_on_az('archive', container, filepath)
+        move_on_az('archive/', container, filepath)
 
 
 def invoke(event: azure.functions.InputStream):
