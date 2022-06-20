@@ -1,16 +1,18 @@
-from res.sharedconstants import *
-from res.pgpDecrypt import process_file
+from src.res.sharedconstants import *
+from src.res.pgpDecrypt import process_file
 
 import os
 import sys
 import traceback
-from os.path import join, isfile
+from os.path import join
 from urllib import parse
 from io import BytesIO
 
 import boto3
+from boto3.s3.transfer import TransferConfig
 from botocore.exceptions import ClientError
 S3 = boto3.resource('s3')
+transferConfig = TransferConfig(multipart_threshold=10000000, multipart_chunksize=10000000, max_concurrency=24)
 
 
 def move_on_s3(dest_folder: str, bucket: str, key: str):
@@ -26,7 +28,7 @@ def download_file_on_s3(bucket: str, key: str):
     download_filepath = join(DOWNLOAD_DIR, trim_path_to_filename(randomize_filename(key)))
     logger.info(f'downloading s3://{bucket}/{key} to {download_filepath}')
     # try:
-    S3.Object(bucket, key).download_file(download_filepath)
+    S3.Object(bucket, key).download_file(download_filepath, Config=transferConfig)
     # except ClientError as e:
     #     error_code = int(e.response['Error']['Code'])
     #     if error_code == 404:
@@ -112,5 +114,3 @@ def invoke(event, context):
                       The file has been moved to the error folder. Stack trace follows: {"".join("!! " + line for line in lines)}'
             logger.error(message)
             error_on_s3(bucket, remote_filepath)
-            return 'failure.'
-    return 'success.'

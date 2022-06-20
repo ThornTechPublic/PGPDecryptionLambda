@@ -1,5 +1,5 @@
 ## Intro
-* Every test in this list should be run locally and through the Azure portal
+* Every test in this list should be run locally and through the online portal
 * In the future, make a script or hard code it so that each test uses different files and can be compared to checksums
 * In the future these should be automated
 
@@ -23,6 +23,6 @@
 
 
 ## Image Version Scores
-* v1.0.0: 2
-* v1.1.0: 6
-* v1.2.0: 
+* Azure:v1.0.0: 2
+* Azure:v1.1.0: 6
+* AWS:v1.0.1: 6
