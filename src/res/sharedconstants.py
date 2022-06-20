@@ -47,6 +47,10 @@ GNUPG_HOME = '/tmp/gnupg'
 reset_folder(GNUPG_HOME)
 gpg = gnupg.GPG(gnupghome=GNUPG_HOME, gpgbinary="/usr/bin/gpg")
 decrypt_result = collections.namedtuple('DecryptResult', ['path', 'ok'])
+create_folder_if_not_exists(DOWNLOAD_DIR)
+create_folder_if_not_exists(DECRYPT_DIR)
+create_folder_if_not_exists(LOCAL_UNZIPPED_DIR)
+create_folder_if_not_exists(LOCAL_READY_DIR)
 
 # Feature Flags
 ARCHIVE = os.environ.get('ARCHIVE', default=False)

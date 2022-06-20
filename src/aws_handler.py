@@ -72,10 +72,6 @@ def archive_on_s3(bucket: str, filepath: str):
 
 def invoke(event, context):
     logger.debug('S3 Event: ' + str(event))
-    create_folder_if_not_exists(DOWNLOAD_DIR)
-    create_folder_if_not_exists(DECRYPT_DIR)
-    create_folder_if_not_exists(LOCAL_UNZIPPED_DIR)
-    create_folder_if_not_exists(LOCAL_READY_DIR)
     for record in event['Records']:
         bucket = record['s3']['bucket']['name']
         remote_filepath = parse.unquote_plus(record['s3']['object']['key'])
