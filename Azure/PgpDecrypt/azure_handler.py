@@ -6,7 +6,7 @@ import sys
 import traceback
 from os.path import join, isfile
 from urllib import parse
-import re
+import tempfile
 
 import azure.storage.blob
 import azure.functions
@@ -14,15 +14,16 @@ import azure.identity
 
 
 # Fails if blob should not be in the account url or if the account name contains a ;
-def move_on_az(dest_folder: str, container: str, filepath: str):
-    regex_result = re.match("AccountName=(.+?);", CONNECTION_STRING)
-    account_url = f"https://{regex_result.group(1)}.blob.core.windows.net"
-    dest_blob_obj = azure.storage.blob.BlobClient.from_connection_string(CONNECTION_STRING,
-                                                                         container, join(dest_folder, filepath))
-    source_url = '/'.join([account_url, container, filepath])
-    logger.info(f'moving original file to {dest_folder} folder')
-    dest_blob_obj.start_copy_from_url(source_url, requires_sync=True)
-    source_blob_obj = azure.storage.blob.BlobClient.from_connection_string(CONNECTION_STRING, container, filepath)
+def move_on_az(dest_folder: str, container: str, remote_filepath: str):
+    dest_blob_name = timestamp_filename(join(dest_folder, remote_filepath))
+    dest_blob_obj = azure.storage.blob.BlobClient.from_connection_string(CONNECTION_STRING, container, dest_blob_name)
+    logger.info(f'moving {remote_filepath} to {dest_blob_obj.blob_name}')
+    source_blob_obj = azure.storage.blob.BlobClient.from_connection_string(CONNECTION_STRING,
+                                                                           container, remote_filepath)
+    with tempfile.TemporaryFile(mode="w+b") as f:
+        source_blob_obj.download_blob().readinto(f)
+        f.seek(0)
+        dest_blob_obj.upload_blob(f)
     logger.info('deleting original upload blob')
     source_blob_obj.delete_blob()
 
@@ -52,8 +53,12 @@ def copy_file_on_az(local_filepath: str, container: str, remote_filepath: str):
     if isfile(local_filepath):
         logger.info(f'Uploading: {local_filepath} to {remote_filepath}')
         with open(local_filepath, "rb") as f:
-            azure.storage.blob.BlobClient.from_connection_string(CONNECTION_STRING,
-                                                                 container, remote_filepath).upload_blob(f)
+            blob_obj = azure.storage.blob.BlobClient.from_connection_string(
+                CONNECTION_STRING, container, remote_filepath)
+            if blob_obj.exists():
+                logger.info("Attempting to replace existing blob")
+                blob_obj.delete_blob()
+            blob_obj.upload_blob(f)
 
 
 # Store file in error directory
@@ -75,14 +80,14 @@ def invoke(event: azure.functions.InputStream):
     blob_obj = azure.storage.blob.BlobClient.from_blob_url(url)
     container_name = blob_obj.container_name
     remote_filepath = blob_obj.blob_name
-    logger.debug(f'Azure Event: {container_name}/{remote_filepath} was uploaded')
+    logger.info(f'Azure Event: {container_name}/{remote_filepath} was uploaded')
 
     if not remote_filepath.endswith(('.pgp', '.gpg', '.zip')):
         logger.info(f'File {remote_filepath} is not an encrypted file... Skipping')
     elif ARCHIVE and remote_filepath.startswith('archive/'):
-        logger.debug('Archive event triggered... Skipping')
+        logger.info('Archive event triggered... Skipping')
     elif ERROR and remote_filepath.startswith('error/'):
-        logger.debug('Error event triggered... Skipping')
+        logger.info('Error event triggered... Skipping')
     else:
         try:
             logger.info(f'Begin Processing {url}')
@@ -96,10 +101,11 @@ def invoke(event: azure.functions.InputStream):
             copy_file_on_az(local_filepath, DECRYPTED_DONE_LOCATION, dest_remote_filepath)
             archive_on_az(container_name, remote_filepath)
             os.remove(local_filepath)
-        except Exception:
+        except Exception as ex:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
             message = f'Unexpected error while processing upload {container_name}/{remote_filepath}, with message \"{exc_value}\". \
                       The file has been moved to the error folder. Stack trace follows: {"".join("!! " + line for line in lines)}'
             logger.error(message)
             error_on_az(container_name, remote_filepath)
+            raise ex
