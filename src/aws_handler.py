@@ -16,8 +16,7 @@ transferConfig = TransferConfig(multipart_threshold=10000000, multipart_chunksiz
 
 
 def move_on_s3(dest_folder: str, bucket: str, key: str):
-    download_filename = trim_path_to_filename(key)
-    new_key = join(dest_folder, download_filename)
+    new_key = timestamp_filename(join(dest_folder, key))
     logger.info('move original file to ' + new_key)
     S3.Object(bucket, new_key).copy_from(CopySource=f'{bucket}/{key}')
     logger.info('deleting original upload file')
@@ -73,20 +72,20 @@ def archive_on_s3(bucket: str, filepath: str):
 
 
 def invoke(event, context):
-    logger.debug('S3 Event: ' + str(event))
+    logger.info('S3 Event: ' + str(event))
     for record in event['Records']:
         bucket = record['s3']['bucket']['name']
         remote_filepath = parse.unquote_plus(record['s3']['object']['key'])
 
-        if not remote_filepath.endswith(('.pgp', '.gpg')):
+        if not remote_filepath.endswith(('.pgp', '.gpg', '.zip')):
             logger.info(f'File {remote_filepath} is not an encrypted file... Skipping')
             continue
 
         if ARCHIVE and remote_filepath.startswith('archive/'):
-            logger.debug('Archive event triggered... Skipping')
+            logger.info('Archive event triggered... Skipping')
             continue
         elif ERROR and remote_filepath.startswith('error/'):
-            logger.debug('Error event triggered... Skipping')
+            logger.info('Error event triggered... Skipping')
             continue
 
         try:
@@ -107,10 +106,11 @@ def invoke(event, context):
             dest_remote_filepath = os.path.splitext(remote_filepath)[0]
             copy_file_on_s3(local_filepath, DECRYPTED_DONE_LOCATION, dest_remote_filepath)
             archive_on_s3(bucket, remote_filepath)
-        except Exception:
+        except Exception as ex:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
             message = f'Unexpected error while processing upload s3://{bucket}/{remote_filepath}, with message "{exc_value}". \
                       The file has been moved to the error folder. Stack trace follows: {"".join("!! " + line for line in lines)}'
             logger.error(message)
             error_on_s3(bucket, remote_filepath)
+            raise ex
