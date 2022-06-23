@@ -53,4 +53,3 @@ build/
 /.aws-sam/
 /build.toml
 
-*/local.settings.json

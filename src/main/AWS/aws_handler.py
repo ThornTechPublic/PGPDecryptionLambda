@@ -1,5 +1,4 @@
-from src.res.sharedconstants import *
-from src.res.pgpDecrypt import process_file
+from src.main.res.pgpDecrypt import process_file
 
 import os
 import sys
@@ -11,7 +10,7 @@ import re
 
 import boto3
 from boto3.s3.transfer import TransferConfig
-from botocore.exceptions import ClientError
+
 S3 = boto3.resource('s3')
 transferConfig = TransferConfig(multipart_threshold=10000000, multipart_chunksize=10000000, max_concurrency=24)
 
