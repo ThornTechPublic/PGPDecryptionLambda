@@ -1,3 +1,5 @@
+// This is a template for the local settings file to be used with the Azure Function CLI `func start`.
+// To use this file make a copy named `local.settings.json` with your values that replace everything inside of the `<>`.
 {
   "IsEncrypted": false,
   "Values": {
