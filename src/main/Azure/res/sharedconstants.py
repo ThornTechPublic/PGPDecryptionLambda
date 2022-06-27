@@ -1,4 +1,5 @@
 import logging
+import subprocess
 import shutil
 import os
 import collections
@@ -34,6 +35,9 @@ def timestamp_filename(filepath: str):
     path, filename = os.path.split(filepath)
     return os.path.join(path, (stamp+'.').join(filename.split('.', 1)))
 
+def get_gpg_binary():
+    cmd = "which gpg"
+    return os.popen(cmd).read().strip()
 
 # Global variables
 PGP_KEY_LOCATION = os.getenv('PGP_KEY_LOCATION')
@@ -52,7 +56,7 @@ LOCAL_READY_DIR = '/tmp/ready/'
 ASC_LOCAL_PATH = '/tmp/asc/'
 GNUPG_HOME = '/tmp/gnupg'
 reset_folder(GNUPG_HOME)
-gpg = gnupg.GPG(gnupghome=GNUPG_HOME, gpgbinary="/usr/bin/gpg")
+gpg = gnupg.GPG(gnupghome=GNUPG_HOME, gpgbinary=get_gpg_binary())
 decrypt_result = collections.namedtuple('DecryptResult', ['path', 'ok'])
 create_folder_if_not_exists(DOWNLOAD_DIR)
 create_folder_if_not_exists(DECRYPT_DIR)
