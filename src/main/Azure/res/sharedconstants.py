@@ -1,4 +1,5 @@
 import logging
+import subprocess
 import shutil
 import os
 import collections
@@ -29,6 +30,15 @@ def randomize_filename(filepath: str):
     return str(num).join(os.path.splitext(filepath))
 
 
+def timestamp_filename(filepath: str):
+    stamp = datetime.utcnow().isoformat(timespec="seconds").replace(":", "_")
+    path, filename = os.path.split(filepath)
+    return os.path.join(path, (stamp+'.').join(filename.split('.', 1)))
+
+def get_gpg_binary():
+    cmd = "which gpg"
+    return os.popen(cmd).read().strip()
+
 # Global variables
 PGP_KEY_LOCATION = os.getenv('PGP_KEY_LOCATION')
 ASC_REMOTE_KEY = os.getenv('PGP_KEY_NAME')
@@ -46,7 +56,7 @@ LOCAL_READY_DIR = '/tmp/ready/'
 ASC_LOCAL_PATH = '/tmp/asc/'
 GNUPG_HOME = '/tmp/gnupg'
 reset_folder(GNUPG_HOME)
-gpg = gnupg.GPG(gnupghome=GNUPG_HOME, gpgbinary="/usr/bin/gpg")
+gpg = gnupg.GPG(gnupghome=GNUPG_HOME, gpgbinary=get_gpg_binary())
 decrypt_result = collections.namedtuple('DecryptResult', ['path', 'ok'])
 create_folder_if_not_exists(DOWNLOAD_DIR)
 create_folder_if_not_exists(DECRYPT_DIR)
@@ -54,10 +64,12 @@ create_folder_if_not_exists(LOCAL_UNZIPPED_DIR)
 create_folder_if_not_exists(LOCAL_READY_DIR)
 
 # Feature Flags
-ARCHIVE = os.getenv('ARCHIVE', default="")
-if ARCHIVE.upper() == "FALSE": ARCHIVE = ""
-ERROR = os.getenv('ERROR', default="")
-if ERROR.upper() == "FALSE": ERROR = ""
+ARCHIVE = os.getenv('ARCHIVE', default=False)
+if isinstance(ARCHIVE, str):
+    ARCHIVE = ARCHIVE.upper().strip() != "FALSE"
+ERROR = os.getenv('ERROR', default=False)
+if isinstance(ERROR, str):
+    ERROR = ERROR.upper().strip() != "FALSE"
 
 trim_path_to_filename = os.path.basename
 trim_path_to_directory = os.path.dirname
