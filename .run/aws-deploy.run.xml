@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="deploy" type="PythonConfigurationType" factoryName="Python" nameIsGenerated="true">
+  <configuration default="false" name="aws-deploy" type="PythonConfigurationType" factoryName="Python" nameIsGenerated="true">
     <module name="pgplambda" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
@@ -17,7 +17,7 @@
       <option name="region" />
       <option name="useCurrentConnection" value="false" />
     </EXTENSION>
-    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/deploy.py" />
+    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/deploy/AWS/aws-deploy.py" />
     <option name="PARAMETERS" value="-t DecryptedTargetBucket=chris-sftpgw-pgp-done EncryptedSourceBucket=chris-sftpgw-pgp-encrypted PgpKeyLocation=chris-pgp-keys PgpKeyName=chris.asc" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />

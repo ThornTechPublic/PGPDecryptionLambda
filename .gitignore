@@ -52,3 +52,6 @@ Thumbs.db
 build/
 /.aws-sam/
 /build.toml
+
+src/main/Azure/local.settings.json
+/src/main/Azure/local.env
