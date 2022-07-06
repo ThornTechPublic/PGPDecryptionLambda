@@ -6,15 +6,17 @@ import sys
 import traceback
 from os.path import join
 from urllib import parse
+import re
 
 from google.cloud.storage import Bucket, Client
 client = Client()
 
 
-def move_on_gcp(dest_folder: str, bucket_name: str, remote_filepath: str):
+def move_on_gcp(dest_pattern: str, bucket_name: str, remote_filepath: str):
     bucket_obj = Bucket(client, bucket_name)
     source_blob = bucket_obj.blob(remote_filepath)
-    dest_remote_filepath = timestamp_filename(join(dest_folder, remote_filepath))
+    path, filename = os.path.split(remote_filepath)
+    dest_remote_filepath = dest_pattern.replace(r"\1", path).replace(r"\2", filename)
     logger.info('move original file to ' + dest_remote_filepath)
     bucket_obj.copy_blob(source_blob, bucket_obj, dest_remote_filepath, client)
     logger.info('deleting original upload file')
@@ -45,13 +47,13 @@ def copy_file_on_gcp(local_filepath: str, bucket_name: str, remote_filepath: str
 # Store file in error directory
 def error_on_gcp(bucket: str, filepath: str):
     if ERROR:
-        move_on_gcp('error/', bucket, filepath)
+        move_on_gcp(ERROR, bucket, filepath)
 
 
 # Archive and delete the file
 def archive_on_gcp(bucket: str, filepath: str):
     if ARCHIVE:
-        move_on_gcp('archive/', bucket, filepath)
+        move_on_gcp(ARCHIVE, bucket, filepath)
 
 
 def invoke(event, context):
@@ -61,38 +63,34 @@ def invoke(event, context):
 
     if not remote_filepath.endswith(('.pgp', '.gpg', '.zip')):
         logger.info(f'File {remote_filepath} is not an encrypted file... Skipping')
-        return
-
-    if ARCHIVE and remote_filepath.startswith('archive/'):
+    elif ARCHIVE and re.fullmatch(ARCHIVE.replace(r"\1", ".+").replace(r"\2", "[^/]+"), remote_filepath) is not None:
         logger.info('Archive event triggered... Skipping')
-        return
-    elif ERROR and remote_filepath.startswith('error/'):
+    elif ERROR and re.fullmatch(ERROR.replace(r"\1", ".+").replace(r"\2", "[^/]+"), remote_filepath) is not None:
         logger.info('Error event triggered... Skipping')
-        return
+    else:
+        try:
+            logger.info(f'Begin Processing gcp://{bucket_name}/{remote_filepath}')
 
-    try:
-        logger.info(f'Begin Processing gcp://{bucket_name}/{remote_filepath}')
+            if '.' not in remote_filepath:
+                logger.info(f'Skipping processing of folder {remote_filepath}')
+                return
+            elif int(event['size']) == 0:
+                logger.info(f'File {remote_filepath} is a placeholder file... Skipping')
+                return
 
-        if '.' not in remote_filepath:
-            logger.info(f'Skipping processing of folder {remote_filepath}')
-            return
-        elif int(event['size']) == 0:
-            logger.info(f'File {remote_filepath} is a placeholder file... Skipping')
-            return
-
-        local_filepath = download_file_on_gcp(bucket_name, remote_filepath)
-        download_asc_on_gcp()
-        local_filepath = process_file(local_filepath)
-        # copy ready files to gcp ready bucket
-        logger.info('Uploading file')
-        dest_remote_filepath = os.path.splitext(remote_filepath)[0]
-        copy_file_on_gcp(local_filepath, DECRYPTED_DONE_LOCATION, dest_remote_filepath)
-        archive_on_gcp(bucket_name, remote_filepath)
-    except Exception as ex:
-        exc_type, exc_value, exc_traceback = sys.exc_info()
-        lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
-        message = f'Unexpected error while processing upload gcp://{bucket_name}/{remote_filepath}, with message "{exc_value}". \
-                  The file has been moved to the error folder. Stack trace follows: {"".join("!! " + line for line in lines)}'
-        logger.error(message)
-        error_on_gcp(bucket_name, remote_filepath)
-        raise ex
+            local_filepath = download_file_on_gcp(bucket_name, remote_filepath)
+            download_asc_on_gcp()
+            local_filepath = process_file(local_filepath)
+            # copy ready files to gcp ready bucket
+            logger.info('Uploading file')
+            dest_remote_filepath = os.path.splitext(remote_filepath)[0]
+            copy_file_on_gcp(local_filepath, DECRYPTED_DONE_LOCATION, dest_remote_filepath)
+            archive_on_gcp(bucket_name, remote_filepath)
+        except Exception as ex:
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
+            message = f'Unexpected error while processing upload gcp://{bucket_name}/{remote_filepath}, with message "{exc_value}". \
+                      The file has been moved to the error folder. Stack trace follows: {"".join("!! " + line for line in lines)}'
+            logger.error(message)
+            error_on_gcp(bucket_name, remote_filepath)
+            raise ex

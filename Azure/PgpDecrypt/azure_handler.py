@@ -7,6 +7,7 @@ import traceback
 from os.path import join, isfile
 from urllib import parse
 import tempfile
+import re
 
 import azure.storage.blob
 import azure.functions
@@ -14,8 +15,9 @@ import azure.identity
 
 
 # Fails if blob should not be in the account url or if the account name contains a ;
-def move_on_az(dest_folder: str, container: str, remote_filepath: str):
-    dest_blob_name = timestamp_filename(join(dest_folder, remote_filepath))
+def move_on_az(dest_pattern: str, container: str, remote_filepath: str):
+    path, filename = os.path.split(remote_filepath)
+    dest_blob_name = dest_pattern.replace(r"\1", path).replace(r"\2", filename)
     dest_blob_obj = azure.storage.blob.BlobClient.from_connection_string(CONNECTION_STRING, container, dest_blob_name)
     logger.info(f'moving {remote_filepath} to {dest_blob_obj.blob_name}')
     source_blob_obj = azure.storage.blob.BlobClient.from_connection_string(CONNECTION_STRING,
@@ -64,13 +66,13 @@ def copy_file_on_az(local_filepath: str, container: str, remote_filepath: str):
 # Store file in error directory
 def error_on_az(container: str, filepath: str):
     if ERROR:
-        move_on_az('error/', container, filepath)
+        move_on_az(ERROR, container, filepath)
 
 
 # Archive and delete the file
 def archive_on_az(container: str, filepath: str):
     if ARCHIVE:
-        move_on_az('archive/', container, filepath)
+        move_on_az(ARCHIVE, container, filepath)
 
 
 def invoke(event: azure.functions.InputStream):
@@ -84,9 +86,9 @@ def invoke(event: azure.functions.InputStream):
 
     if not remote_filepath.endswith(('.pgp', '.gpg', '.zip')):
         logger.info(f'File {remote_filepath} is not an encrypted file... Skipping')
-    elif ARCHIVE and remote_filepath.startswith('archive/'):
+    elif ARCHIVE and re.fullmatch(ARCHIVE.replace(r"\1", ".+").replace(r"\2", "[^/]+"), remote_filepath) is not None:
         logger.info('Archive event triggered... Skipping')
-    elif ERROR and remote_filepath.startswith('error/'):
+    elif ERROR and re.fullmatch(ERROR.replace(r"\1", ".+").replace(r"\2", "[^/]+"), remote_filepath) is not None:
         logger.info('Error event triggered... Skipping')
     else:
         try:
