@@ -38,7 +38,7 @@ from psutil.tests import which
 
 if POSIX:
     import mmap
-    import resource
+    import src
 
     from psutil._psutil_posix import getpagesize
 
@@ -417,7 +417,7 @@ class TestMisc(PsutilTestCase):
     def test_getpagesize(self):
         pagesize = getpagesize()
         self.assertGreater(pagesize, 0)
-        self.assertEqual(pagesize, resource.getpagesize())
+        self.assertEqual(pagesize, src.getpagesize())
         self.assertEqual(pagesize, mmap.PAGESIZE)
 
 
