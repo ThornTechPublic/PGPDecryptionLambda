@@ -1,3 +1,4 @@
+from src.main.res.sharedconstants import *
 from src.main.res.pgpDecrypt import process_file
 
 import os
