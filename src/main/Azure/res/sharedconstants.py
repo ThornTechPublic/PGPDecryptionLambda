@@ -30,11 +30,6 @@ def randomize_filename(filepath: str):
     return str(num).join(os.path.splitext(filepath))
 
 
-def timestamp_filename(filepath: str):
-    stamp = datetime.utcnow().isoformat(timespec="seconds").replace(":", "_")
-    path, filename = os.path.split(filepath)
-    return os.path.join(path, (stamp+'.').join(filename.split('.', 1)))
-
 def get_gpg_binary():
     cmd = "which gpg"
     return os.popen(cmd).read().strip()
