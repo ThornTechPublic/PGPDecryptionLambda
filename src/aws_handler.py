@@ -18,7 +18,7 @@ transferConfig = TransferConfig(multipart_threshold=10000000, multipart_chunksiz
 
 def move_on_s3(dest_pattern: str, bucket: str, key: str):
     path, filename = os.path.split(key)
-    new_key = dest_pattern.replace(r"\1", path).replace(r"\2", filename)
+    new_key = dest_pattern.replace(r"\1", path).replace(r"\2", filename).strip('/')
     logger.info('move original file to ' + new_key)
     S3.Object(bucket, new_key).copy_from(CopySource=f'{bucket}/{key}')
     logger.info('deleting original upload file')
@@ -83,10 +83,10 @@ def invoke(event, context):
             logger.info(f'File {remote_filepath} is not an encrypted file... Skipping')
             continue
 
-        if ARCHIVE and re.fullmatch(ARCHIVE.replace(r"\1", ".+").replace(r"\2", "[^/]+"), remote_filepath) is not None:
+        elif ARCHIVE and re.fullmatch(ARCHIVE.replace(r"\1/", ".*/?", 1).replace(r"\1", ".+").replace(r"\2", "[^/]+"), remote_filepath) is not None:
             logger.info('Archive event triggered... Skipping')
             continue
-        elif ERROR and re.fullmatch(ERROR.replace(r"\1", ".+").replace(r"\2", "[^/]+"), remote_filepath) is not None:
+        elif ERROR and re.fullmatch(ERROR.replace(r"\1/", ".*/?", 1).replace(r"\1", ".+").replace(r"\2", "[^/]+"), remote_filepath) is not None:
             logger.info('Error event triggered... Skipping')
             continue
 

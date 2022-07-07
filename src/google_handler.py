@@ -16,7 +16,7 @@ def move_on_gcp(dest_pattern: str, bucket_name: str, remote_filepath: str):
     bucket_obj = Bucket(client, bucket_name)
     source_blob = bucket_obj.blob(remote_filepath)
     path, filename = os.path.split(remote_filepath)
-    dest_remote_filepath = dest_pattern.replace(r"\1", path).replace(r"\2", filename)
+    dest_remote_filepath = dest_pattern.replace(r"\1", path).replace(r"\2", filename).strip('/')
     logger.info('move original file to ' + dest_remote_filepath)
     bucket_obj.copy_blob(source_blob, bucket_obj, dest_remote_filepath, client)
     logger.info('deleting original upload file')
@@ -63,9 +63,9 @@ def invoke(event, context):
 
     if not remote_filepath.endswith(('.pgp', '.gpg', '.zip')):
         logger.info(f'File {remote_filepath} is not an encrypted file... Skipping')
-    elif ARCHIVE and re.fullmatch(ARCHIVE.replace(r"\1", ".+").replace(r"\2", "[^/]+"), remote_filepath) is not None:
+    elif ARCHIVE and re.fullmatch(ARCHIVE.replace(r"\1/", ".*/?", 1).replace(r"\1", ".+").replace(r"\2", "[^/]+"), remote_filepath) is not None:
         logger.info('Archive event triggered... Skipping')
-    elif ERROR and re.fullmatch(ERROR.replace(r"\1", ".+").replace(r"\2", "[^/]+"), remote_filepath) is not None:
+    elif ERROR and re.fullmatch(ERROR.replace(r"\1/", ".*/?", 1).replace(r"\1", ".+").replace(r"\2", "[^/]+"), remote_filepath) is not None:
         logger.info('Error event triggered... Skipping')
     else:
         try:
