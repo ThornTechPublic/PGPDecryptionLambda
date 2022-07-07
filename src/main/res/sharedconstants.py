@@ -1,11 +1,9 @@
 import logging
-import subprocess
 import shutil
 import os
 import collections
 import gnupg
 import random
-from datetime import datetime
 
 # Logger
 logger = logging.getLogger()
@@ -30,10 +28,6 @@ def randomize_filename(filepath: str):
     return str(num).join(os.path.splitext(filepath))
 
 
-def get_gpg_binary():
-    cmd = "which gpg"
-    return os.popen(cmd).read().strip()
-
 # Global variables
 PGP_KEY_LOCATION = os.getenv('PGP_KEY_LOCATION')
 ASC_REMOTE_KEY = os.getenv('PGP_KEY_NAME')
@@ -42,6 +36,7 @@ PASSPHRASE = os.getenv("PGP_PASSPHRASE", None)
 if PASSPHRASE == "":
     PASSPHRASE = None
 CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING", None)
+GPG_BINARY_PATH = os.getenv("GPG_BINARY_PATH", "/usr/bin/gpg")
 
 # Directories
 DOWNLOAD_DIR = '/tmp/downloads/'
@@ -51,7 +46,7 @@ LOCAL_READY_DIR = '/tmp/ready/'
 ASC_LOCAL_PATH = '/tmp/asc/'
 GNUPG_HOME = '/tmp/gnupg'
 reset_folder(GNUPG_HOME)
-gpg = gnupg.GPG(gnupghome=GNUPG_HOME, gpgbinary=get_gpg_binary())
+gpg = gnupg.GPG(gnupghome=GNUPG_HOME, gpgbinary=GPG_BINARY_PATH)
 decrypt_result = collections.namedtuple('DecryptResult', ['path', 'ok'])
 create_folder_if_not_exists(DOWNLOAD_DIR)
 create_folder_if_not_exists(DECRYPT_DIR)
