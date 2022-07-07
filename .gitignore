@@ -53,4 +53,5 @@ build/
 /.aws-sam/
 /build.toml
 
-*/local.settings.json
+src/main/Azure/local.settings.json
+/src/main/Azure/local.env

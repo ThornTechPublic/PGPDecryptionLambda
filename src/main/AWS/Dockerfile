@@ -6,7 +6,7 @@ RUN wget https://www.python.org/ftp/python/3.9.6/Python-3.9.6.tgz &&\
 RUN cd Python-3.9.6 && \
     ./configure --enable-optimizations &&\
     make altinstall
-COPY src ${LAMBDA_TASK_ROOT}/src
+COPY ../.. ${LAMBDA_TASK_ROOT}/src
 RUN python3.9 --version \
     python3.9 -m pip install --upgrade pip && \
     python3.9 -m pip install -r ${LAMBDA_TASK_ROOT}/src/requirements.txt
