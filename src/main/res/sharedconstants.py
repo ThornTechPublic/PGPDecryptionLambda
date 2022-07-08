@@ -4,6 +4,7 @@ import os
 import collections
 import gnupg
 import random
+import shutil
 
 # Logger
 logger = logging.getLogger()
@@ -28,6 +29,11 @@ def randomize_filename(filepath: str):
     return str(num).join(os.path.splitext(filepath))
 
 
+def get_gpg_binary():
+    loc = shutil.which("gpg")
+    return loc if loc else "/usr/bin/gpg"
+
+
 # Global variables
 PGP_KEY_LOCATION = os.getenv('PGP_KEY_LOCATION')
 ASC_REMOTE_KEY = os.getenv('PGP_KEY_NAME')
@@ -36,7 +42,9 @@ PASSPHRASE = os.getenv("PGP_PASSPHRASE", None)
 if PASSPHRASE == "":
     PASSPHRASE = None
 CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING", None)
-GPG_BINARY_PATH = os.getenv("GPG_BINARY_PATH", "/usr/bin/gpg")
+GPG_BINARY_PATH = os.getenv("GPG_BINARY_PATH")
+if not GPG_BINARY_PATH:
+    GPG_BINARY_PATH = get_gpg_binary()
 
 # Directories
 DOWNLOAD_DIR = '/tmp/downloads/'
