@@ -25,7 +25,19 @@ Now all of the dependencies for GNUPG and the GPG binary can be packaged by `cd 
 `zip -r ../layer.zip .`. the zip file can then be obtained from the container with the command
 `docker cp <containerName>:/opt/layer.zip local/path`, and extracted into the `<project_root>/dependencies` directory.
 
-## Deployment
+## Manual Deployment
+
+1. Navigate to [AWS ECR](https://console.aws.amazon.com/ecr/get-started)
+2. Create a new ECR repository
+3. Follow the instruction in the View Push Commands modal
+4. Build the docker image
+5. Push the docker image to the ECR repo
+6. Go to [AWS Lambda](https://console.aws.amazon.com/lambda/home)
+7. Create a new Container image function
+8. Browse to your ECR image and create
+9. Once the function has been created, go to its configuration tab and set up the [environment variables](#lambda-environment-variables) bellow
+10. Configure [permissions bellow](#lambda-required-permissions) on the lambda execution role
+
 
 Using the SAM CLI deploy the template.yaml file.
 
@@ -51,7 +63,7 @@ EncryptedSourceBucket:
 ```yaml
 LOG_LEVEL:
     Allowed Values: [ CRITICAL | ERROR | WARNING | INFO | DEBUG | NOTSET ]
-    Description: "Set log level if desired."
+    Description: "(Optional) Set log level if desired."
     Default: INFO
     Type: String
 PGP_PASSPHRASE:
@@ -70,11 +82,11 @@ DECRYPTED_DONE_BUCKET:
 ARCHIVE:
     Type: Boolean
     Default: false
-    Descritption: "If true, files that have already been decrypted will be moved into an archive folder in the source bucket"
+    Descritption: "(Optional) If true, files that have already been decrypted will be moved into an archive folder in the source bucket"
 ERROR:
     Type: Boolean
     Default: false
-    Descritption: "If true, files that encounter an error will decrypting will be moved into an error folder in the source bucket"
+    Descritption: "(Optional) If true, files that encounter an error will decrypting will be moved into an error folder in the source bucket"
 ```
 
 ## Bucket setup
@@ -92,45 +104,26 @@ The pgp lambda will require the following permissions to create log streams in C
 buckets.
 
 * AWSLambdaBasicExecutionRole
-* Policy for access to file bucket
-    ```json
-    {
-        "Version": "2012-10-17",
-        "Statement": [
-            {
-                "Sid": "VisualEditor0",
-                "Effect": "Allow",
-                "Action": [
-                    "s3:PutObject",
-                    "s3:GetObject",
-                    "s3:ListBucket",
-                    "s3:DeleteObject"
-                ],
-                "Resource": [
-                    "arn:aws:s3:::<file-bucket>",
-                    "arn:aws:s3:::<file-bucket>/*"
-                ]
-            }
-        ]
-    }
-    ```
-* Policy for access to key bucket
-    ```json
-    {
-        "Version": "2012-10-17",
-        "Statement": [
-            {
-                "Sid": "VisualEditor0",
-                "Effect": "Allow",
-                "Action": [
-                    "s3:GetObject",
-                    "s3:ListBucket"
-                ],
-                "Resource": [
-                    "arn:aws:s3:::<pgp-key-bucket>",
-                    "arn:aws:s3:::<pgp-key-bucket>/*"
-                ]
-            }
-        ]
-    }
+* Policy listing bucket and accessing file objects in those buckets
+    ```yaml
+    Policies:
+      - Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "s3:ListBucket"
+            Resource:
+              - !Sub "arn:aws:s3:::${DecryptedTargetBucket}"
+              - !Sub "arn:aws:s3:::${EncryptedSourceBucket}"
+              - !Sub "arn:aws:s3:::${PgpKeyLocation}"
+          - Effect: "Allow"
+            Action:
+              - "s3:PutObject"
+              - "s3:GetObject"
+              - "s3:DeleteObject"
+            Resource:
+              - !Sub "arn:aws:s3:::${DecryptedTargetBucket}/*"
+              - !Sub "arn:aws:s3:::${EncryptedSourceBucket}/*"
+              - !Sub "arn:aws:s3:::${PgpKeyLocation}/*"
+
     ```
