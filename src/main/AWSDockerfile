@@ -1,6 +1,6 @@
 FROM public.ecr.aws/lambda/python:3.9
 
-RUN yum install -y wget tar gzip gcc openssl-devel bzip2-devel libffi-devel make zip
+RUN yum install -y wget tar gzip gcc openssl-devel bzip2-devel libffi-devel make zip which
 RUN wget https://www.python.org/ftp/python/3.9.6/Python-3.9.6.tgz &&\
     tar -xzf Python-3.9.6.tgz
 RUN cd Python-3.9.6 && \
