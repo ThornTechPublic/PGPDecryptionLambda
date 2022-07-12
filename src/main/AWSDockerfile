@@ -6,9 +6,10 @@ RUN wget https://www.python.org/ftp/python/3.9.6/Python-3.9.6.tgz &&\
 RUN cd Python-3.9.6 && \
     ./configure --enable-optimizations &&\
     make altinstall
-COPY ../.. ${LAMBDA_TASK_ROOT}/src
+COPY ./AWS ${LAMBDA_TASK_ROOT}/src/main/AWS
+COPY ./res ${LAMBDA_TASK_ROOT}/src/main/res
 RUN python3.9 --version \
     python3.9 -m pip install --upgrade pip && \
-    python3.9 -m pip install -r ${LAMBDA_TASK_ROOT}/src/requirements.txt
+    python3.9 -m pip install -r ${LAMBDA_TASK_ROOT}/src/main/AWS/requirements.txt
 
-CMD ["src.aws_handler.invoke"]
+CMD ["src.main.AWS.aws_handler.invoke"]

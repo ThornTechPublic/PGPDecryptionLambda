@@ -1,3 +1,4 @@
+from src.main.res.sharedconstants import *
 from src.main.res.pgpDecrypt import process_file
 
 import os
@@ -6,6 +7,7 @@ import traceback
 from os.path import join
 from urllib import parse
 from io import BytesIO
+import re
 
 import boto3
 from boto3.s3.transfer import TransferConfig
@@ -14,8 +16,9 @@ S3 = boto3.resource('s3')
 transferConfig = TransferConfig(multipart_threshold=10000000, multipart_chunksize=10000000, max_concurrency=24)
 
 
-def move_on_s3(dest_folder: str, bucket: str, key: str):
-    new_key = timestamp_filename(join(dest_folder, key))
+def move_on_s3(dest_pattern: str, bucket: str, key: str):
+    path, filename = os.path.split(key)
+    new_key = dest_pattern.replace(r"\1", path).replace(r"\2", filename).strip('/')
     logger.info('move original file to ' + new_key)
     S3.Object(bucket, new_key).copy_from(CopySource=f'{bucket}/{key}')
     logger.info('deleting original upload file')
@@ -61,13 +64,13 @@ def copy_file_on_s3(local_filepath: str, bucket: str, remote_filepath: str):
 # Store file in error directory
 def error_on_s3(bucket: str, filepath: str):
     if ERROR:
-        move_on_s3('error/', bucket, filepath)
+        move_on_s3(ERROR, bucket, filepath)
 
 
 # Archive and delete the file
 def archive_on_s3(bucket: str, filepath: str):
     if ARCHIVE:
-        move_on_s3('archive/', bucket, filepath)
+        move_on_s3(ARCHIVE, bucket, filepath)
 
 
 def invoke(event, context):
@@ -80,10 +83,10 @@ def invoke(event, context):
             logger.info(f'File {remote_filepath} is not an encrypted file... Skipping')
             continue
 
-        if ARCHIVE and remote_filepath.startswith('archive/'):
+        elif ARCHIVE and re.fullmatch(ARCHIVE.replace(r"\1/", ".*/?", 1).replace(r"\1", ".+").replace(r"\2", "[^/]+"), remote_filepath) is not None:
             logger.info('Archive event triggered... Skipping')
             continue
-        elif ERROR and remote_filepath.startswith('error/'):
+        elif ERROR and re.fullmatch(ERROR.replace(r"\1/", ".*/?", 1).replace(r"\1", ".+").replace(r"\2", "[^/]+"), remote_filepath) is not None:
             logger.info('Error event triggered... Skipping')
             continue
 

@@ -1,0 +1,11 @@
+imports:
+  - path: pgp_addon.py
+
+resources:
+  - name: function
+    type: pgp_addon.py
+    properties:
+      region: us-central1
+      entryPoint: invoke
+      runtime: python39
+      bucket: pgpencryptedbucket54884
