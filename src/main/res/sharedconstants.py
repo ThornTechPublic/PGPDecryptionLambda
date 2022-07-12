@@ -1,11 +1,10 @@
 import logging
-import subprocess
 import shutil
 import os
 import collections
 import gnupg
 import random
-from datetime import datetime
+import shutil
 
 # Logger
 logger = logging.getLogger()
@@ -30,14 +29,10 @@ def randomize_filename(filepath: str):
     return str(num).join(os.path.splitext(filepath))
 
 
-def timestamp_filename(filepath: str):
-    stamp = datetime.utcnow().isoformat(timespec="seconds").replace(":", "_")
-    path, filename = os.path.split(filepath)
-    return os.path.join(path, (stamp+'.').join(filename.split('.', 1)))
-
 def get_gpg_binary():
-    cmd = "which gpg"
-    return os.popen(cmd).read().strip()
+    loc = shutil.which("gpg")
+    return loc if loc else "/usr/bin/gpg"
+
 
 # Global variables
 PGP_KEY_LOCATION = os.getenv('PGP_KEY_LOCATION')
@@ -47,6 +42,9 @@ PASSPHRASE = os.getenv("PGP_PASSPHRASE", None)
 if PASSPHRASE == "":
     PASSPHRASE = None
 CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING", None)
+GPG_BINARY_PATH = os.getenv("GPG_BINARY_PATH")
+if not GPG_BINARY_PATH:
+    GPG_BINARY_PATH = get_gpg_binary()
 
 # Directories
 DOWNLOAD_DIR = '/tmp/downloads/'
@@ -56,7 +54,7 @@ LOCAL_READY_DIR = '/tmp/ready/'
 ASC_LOCAL_PATH = '/tmp/asc/'
 GNUPG_HOME = '/tmp/gnupg'
 reset_folder(GNUPG_HOME)
-gpg = gnupg.GPG(gnupghome=GNUPG_HOME, gpgbinary=get_gpg_binary())
+gpg = gnupg.GPG(gnupghome=GNUPG_HOME, gpgbinary=GPG_BINARY_PATH)
 decrypt_result = collections.namedtuple('DecryptResult', ['path', 'ok'])
 create_folder_if_not_exists(DOWNLOAD_DIR)
 create_folder_if_not_exists(DECRYPT_DIR)
@@ -64,12 +62,10 @@ create_folder_if_not_exists(LOCAL_UNZIPPED_DIR)
 create_folder_if_not_exists(LOCAL_READY_DIR)
 
 # Feature Flags
-ARCHIVE = os.getenv('ARCHIVE', default=False)
-if isinstance(ARCHIVE, str):
-    ARCHIVE = ARCHIVE.upper().strip() != "FALSE"
-ERROR = os.getenv('ERROR', default=False)
-if isinstance(ERROR, str):
-    ERROR = ERROR.upper().strip() != "FALSE"
+ARCHIVE = os.getenv('ARCHIVE', default="")
+if ARCHIVE.upper() == "FALSE": ARCHIVE = ""
+ERROR = os.getenv('ERROR', default="")
+if ERROR.upper() == "FALSE": ERROR = ""
 
 trim_path_to_filename = os.path.basename
 trim_path_to_directory = os.path.dirname

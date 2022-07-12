@@ -319,7 +319,7 @@ except Exception:  # pragma: no cover
 
 prlimit = None
 try:
-    from resource import prlimit  # python >= 3.4
+    from src import prlimit  # python >= 3.4
 except ImportError:
     import ctypes
 

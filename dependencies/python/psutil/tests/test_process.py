@@ -416,21 +416,21 @@ class TestProcess(PsutilTestCase):
 
     @unittest.skipIf(not HAS_RLIMIT, "not supported")
     def test_rlimit_get(self):
-        import resource
+        import src
         p = psutil.Process(os.getpid())
         names = [x for x in dir(psutil) if x.startswith('RLIMIT')]
         assert names, names
         for name in names:
             value = getattr(psutil, name)
             self.assertGreaterEqual(value, 0)
-            if name in dir(resource):
-                self.assertEqual(value, getattr(resource, name))
+            if name in dir(src):
+                self.assertEqual(value, getattr(src, name))
                 # XXX - On PyPy RLIMIT_INFINITY returned by
                 # resource.getrlimit() is reported as a very big long
                 # number instead of -1. It looks like a bug with PyPy.
                 if PYPY:
                     continue
-                self.assertEqual(p.rlimit(value), resource.getrlimit(value))
+                self.assertEqual(p.rlimit(value), src.getrlimit(value))
             else:
                 ret = p.rlimit(value)
                 self.assertEqual(len(ret), 2)
