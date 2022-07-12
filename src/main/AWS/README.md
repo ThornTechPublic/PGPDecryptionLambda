@@ -3,41 +3,26 @@
 * AWS CLI with Administrator permission
 * [SAM Local installed](https://github.com/awslabs/aws-sam-local)
 
-### GNUPG Dependencies
-
-**_NOTE:_** This section is for the orignial AWS Lambda that used lambda layers and will be depricated upon
-completion of the containerized AWS image.
-
-The GNUPG dependencies are contained in the `dependencies/` directory, and will be deployed to a lambda layer.
-These dependencies where created by using the Dockerfile to provision a container with Python3.9.
-You can then connect to the container and `cd /opt`. Then create a directory called `layer/` with the following
-sub-directories `bin`, `lib`, and `python`. You can then install the GNUPG dependencies into the `layer/python/`
-directory with the command `pip install gnupg -t ./layer/python`. The GNUPG module requires an installed GPG binary and
-its subsequent dependencies. This was accomplished by creating a directory `mkdir -p /opt/tmppackages/etc` then copying
-all of the Yum commands to that `tmppackages/etc` directory with `cp -r /etc/yum* /opt/tmppackages/etc/` this allows
-the use of the yum install root option. Then using the command
-`yum install -y --installroot=/opt/tmppackages --releasever=/ gpg` to install gpg and its dependencies
-to the `/opt/tmppackages` directory which will create a `bin`, `lib`, and `lib64` directories. The GPG binaries can then
-be copies over to the `layer/bin/` directory with the command `cp -r /opt/tmppackages/bin/gpg* /opt/layer/bin/`. The GPG
-dependencies can be aquired with the command
-`ldd /opt/tmppackages/bin/gpg | grep "=> /" | awk '{print $3}' | xargs -I '{}' cp -v '{}' /opt/layer/lib/`
-Now all of the dependencies for GNUPG and the GPG binary can be packaged by `cd /opt/layer` and run the command
-`zip -r ../layer.zip .`. the zip file can then be obtained from the container with the command
-`docker cp <containerName>:/opt/layer.zip local/path`, and extracted into the `<project_root>/dependencies` directory.
-
 ## Manual Deployment
 
 1. Navigate to [AWS ECR](https://console.aws.amazon.com/ecr/get-started)
 2. Create a new ECR repository
-3. Follow the instruction in the View Push Commands modal
-4. Build the docker image
-5. Push the docker image to the ECR repo
+3. Build the docker image from the `src/main` directory by running `docker build -f AWSDockerfile -t pgplambda .`
+4. Follow the instructions from the ECR repository `View Push Commands` button to tag and push the image to the ECR
+   repository
 6. Go to [AWS Lambda](https://console.aws.amazon.com/lambda/home)
 7. Create a new Container image function
 8. Browse to your ECR image and create
-9. Once the function has been created, go to its configuration tab and set up the [environment variables](#lambda-environment-variables) bellow
-10. Configure [permissions bellow](#lambda-required-permissions) on the lambda execution role
+9. Once the function has been created, go to its configuration tab and set up
+   the [environment variables](#lambda-environment-variables) bellow
+10. Configure [permissions](#lambda-required-permissions) bellow on the lambda execution role
 
+Now the PGP lambda should be fully operational, and you can configure the [S3 Event](#bucket-setup) to trigger the
+lambda when a file is uploaded to the bucket.
+
+## Cloud Formation Deployment
+
+**_NOTE:_** This section is for the original AWS Lambda that used lambda layers and will be reworked soon.
 
 Using the SAM CLI deploy the template.yaml file.
 
@@ -76,7 +61,7 @@ PGP_KEY_LOCATION:
 PGP_KEY_NAME:
     Type: String
     Description: "Name of the PGP private key"
-DECRYPTED_DONE_BUCKET:
+DECRYPTED_DONE_LOCATION:
     Type: String
     Description: "S3 Bucket where files will land lambda decryption"
 ARCHIVE:
@@ -113,17 +98,17 @@ buckets.
             Action:
               - "s3:ListBucket"
             Resource:
-              - !Sub "arn:aws:s3:::${DecryptedTargetBucket}"
-              - !Sub "arn:aws:s3:::${EncryptedSourceBucket}"
-              - !Sub "arn:aws:s3:::${PgpKeyLocation}"
+              - !Sub "arn:aws:s3:::<DECRYPTED_DONE_LOCATION>"
+              - !Sub "arn:aws:s3:::<EncryptedSourceBucket>"
+              - !Sub "arn:aws:s3:::<PGP_KEY_LOCATION>"
           - Effect: "Allow"
             Action:
               - "s3:PutObject"
               - "s3:GetObject"
               - "s3:DeleteObject"
             Resource:
-              - !Sub "arn:aws:s3:::${DecryptedTargetBucket}/*"
-              - !Sub "arn:aws:s3:::${EncryptedSourceBucket}/*"
-              - !Sub "arn:aws:s3:::${PgpKeyLocation}/*"
+              - !Sub "arn:aws:s3:::<DECRYPTED_DONE_LOCATION>/*"
+              - !Sub "arn:aws:s3:::<EncryptedSourceBucket>/*"
+              - !Sub "arn:aws:s3:::<PGP_KEY_LOCATION>/*"
 
     ```
