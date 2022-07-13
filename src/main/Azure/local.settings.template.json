@@ -5,7 +5,7 @@
   "Values": {
     "FUNCTIONS_WORKER_RUNTIME": "python",
     "AzureWebJobsStorage": "<Connection string for Function App operational storage account>",
-    "ENCRYPTED_SOURCE_BUCKET": "<Container where GPG encrypted files will be uploaded for processing>",
+    "ENCRYPTED_SOURCE_LOCATION": "<Container where GPG encrypted files will be uploaded for processing>",
     "DECRYPTED_DONE_LOCATION": "<Container where files will be sent after processing>",
     "AZURE_STORAGE_CONNECTION_STRING": "<Connection string for storage account that houses pre-processing, post-processing, and pgp-key containers>",
     "PGP_KEY_LOCATION": "<Container where PGP key file is stored>",
