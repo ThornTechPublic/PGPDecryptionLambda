@@ -21,7 +21,7 @@ For a `BlobTrigger` to work, you provide a path which dictates where the blobs a
 * Do docker login on terminal
 * Set up IntelliJ service to run docker build (make sure to specify env vars in the edit config menu)
 * At this point make sure your function.json "connection" value is set to the same name as the connection string's env var
-  * Also, the "path" value should look something like %ENCRYPTED_SOURCE_BUCKET%/{name}
+  * Also, the "path" value should look something like %ENCRYPTED_SOURCE_LOCATION%/{name}
 * Run service to build docker image
 * Do docker run or use the IntelliJ service to run the docker image
 

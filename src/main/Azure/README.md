@@ -61,7 +61,7 @@ az functionapp config appsettings set \
     --settings \
       AzureWebJobsStorage=<Connection string from storage account created in step 4> \
       AZURE_STORAGE_CONNECTION_STRING=<Connection string for storage account that houses pre-processing, post-processing, and pgp-key containers> \
-      ENCRYPTED_SOURCE_BUCKET=<Container where GPG encrypted files will be uploaded for processing> \
+      ENCRYPTED_SOURCE_LOCATION=<Container where GPG encrypted files will be uploaded for processing> \
       DECRYPTED_DONE_LOCATION=<Container where files will be sent after processing> \
       PGP_KEY_LOCATION=<Container where PGP key file is stored> \
       PGP_KEY_NAME=<Name of PGP ASC key file> \
