@@ -1,0 +1,15 @@
+// This is a template for the local settings file to be used with the Azure Function CLI `func start`.
+// To use this file make a copy named `local.settings.json` with your values that replace everything inside of the `<>`.
+{
+  "IsEncrypted": false,
+  "Values": {
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "AzureWebJobsStorage": "<Connection string for Function App operational storage account>",
+    "ENCRYPTED_SOURCE_LOCATION": "<Container where GPG encrypted files will be uploaded for processing>",
+    "DECRYPTED_DONE_LOCATION": "<Container where files will be sent after processing>",
+    "AZURE_STORAGE_CONNECTION_STRING": "<Connection string for storage account that houses pre-processing, post-processing, and pgp-key containers>",
+    "PGP_KEY_LOCATION": "<Container where PGP key file is stored>",
+    "PGP_KEY_NAME": "<Name of PGP ASC key file>",
+    "PGP_PASSPHRASE": "<(optional) passphrase for pgp key file if applicable >"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "scriptFile": "azure_handler.py",
+  "entryPoint": "invoke",
+  "bindings": [
+    {
+      "name": "event",
+      "type": "blobTrigger",
+      "direction": "in",
+      "path": "%ENCRYPTED_SOURCE_LOCATION%/{name}",
+      "connection": "AZURE_STORAGE_CONNECTION_STRING"
+    }
+  ]
+}

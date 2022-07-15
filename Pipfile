@@ -15,6 +15,10 @@ python-gnupg = "==0.4.4"
 s3transfer = ">=0.3.3"
 six = ">=1.15.0"
 urllib3 = ">=1.25.10"
+azure-storage-blob = "*"
+azure-functions = "*"
+azure-identity = "*"
+google-cloud-storage = "*"
 
 [requires]
 python_version = "3.9"
