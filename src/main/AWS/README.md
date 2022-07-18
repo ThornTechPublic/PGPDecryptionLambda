@@ -14,7 +14,7 @@
 7. Create a new Container image function
 8. Browse to your ECR image and create
 9. Once the function has been created, go to its configuration tab and set up
-   the [environment variables](#lambda-environment-variables) bellow
+   the [environment variables](/README.md#runtime_environment_variables) bellow
 10. Configure [permissions](#lambda-required-permissions) bellow on the lambda execution role
 
 Now the PGP lambda should be fully operational, and you can configure the [S3 Event](#bucket-setup) to trigger the
@@ -41,37 +41,6 @@ DecryptedTargetBucket:
 EncryptedSourceBucket:
     Type: String
     Description: "S3 Bucket that triggers lambda to decrypt files. Needed for permissions"
-```
-
-### Lambda Environment Variables
-
-```yaml
-LOG_LEVEL:
-    Allowed Values: [ CRITICAL | ERROR | WARNING | INFO | DEBUG | NOTSET ]
-    Description: "(Optional) Set log level if desired."
-    Default: INFO
-    Type: String
-PGP_PASSPHRASE:
-    Type: String
-    Description: "(Optional) Set PGP Key passphrase if applicable "
-    Default: None
-PGP_KEY_LOCATION:
-    Type: String
-    Description: "S3 bucket where the PGP private key is located"
-PGP_KEY_NAME:
-    Type: String
-    Description: "Name of the PGP private key"
-DECRYPTED_DONE_LOCATION:
-    Type: String
-    Description: "S3 Bucket where files will land lambda decryption"
-ARCHIVE:
-    Type: Boolean
-    Default: false
-    Descritption: "(Optional) If true, files that have already been decrypted will be moved into an archive folder in the source bucket"
-ERROR:
-    Type: Boolean
-    Default: false
-    Descritption: "(Optional) If true, files that encounter an error will decrypting will be moved into an error folder in the source bucket"
 ```
 
 ## Bucket setup
