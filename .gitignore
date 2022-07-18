@@ -55,3 +55,4 @@ build/
 
 src/main/Azure/local.settings.json
 /src/main/Azure/local.env
+/deploy/GCP/pgpGoogleArchive.zip
