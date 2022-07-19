@@ -1,5 +1,5 @@
 from res.sharedconstants import *
-from res.pgpDecrypt import process_file
+from res.pgpDecrypt import process_file, import_gpg_key
 
 import os
 import sys
@@ -47,7 +47,7 @@ def download_asc_on_az():
     key_data = blob_obj.download_blob().readall()
     if isinstance(key_data, bytes):
         key_data = key_data.decode("UTF-8")
-    import_result = gpg.import_keys(key_data)
+    import_gpg_key(key_data)
     logger.info(f'key import result fingerprint: {", ".join(import_result.fingerprints)}')
 
 
