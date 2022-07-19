@@ -1,5 +1,5 @@
 from src.main.res.sharedconstants import *
-from src.main.res.pgpDecrypt import process_file
+from src.main.res.pgpDecrypt import process_file, import_gpg_key
 
 import os
 import sys
@@ -34,8 +34,7 @@ def download_file_on_gcp(bucket_name: str, remote_filepath: str):
 def download_asc_on_gcp():
     logger.info(f'Attempting to download key from gcp://{PGP_KEY_LOCATION}/{ASC_REMOTE_KEY}')
     blob_obj = Bucket(client, PGP_KEY_LOCATION).blob(ASC_REMOTE_KEY)
-    import_result = gpg.import_keys(blob_obj.download_as_bytes(client).decode('UTF-8'))
-    logger.info(f'key import result fingerprint: {", ".join(import_result.fingerprints)}')
+    import_gpg_key(blob_obj.download_as_bytes(client).decode('UTF-8'))
 
 
 def copy_file_on_gcp(local_filepath: str, bucket_name: str, remote_filepath: str):

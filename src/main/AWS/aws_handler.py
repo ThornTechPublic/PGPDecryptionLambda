@@ -1,5 +1,5 @@
 from src.main.res.sharedconstants import *
-from src.main.res.pgpDecrypt import process_file
+from src.main.res.pgpDecrypt import process_file, import_gpg_key
 
 import os
 import sys
@@ -47,12 +47,11 @@ def download_asc_on_s3():
     buffer = BytesIO()
     S3.Object(PGP_KEY_LOCATION, ASC_REMOTE_KEY).download_fileobj(buffer)
     buffer.seek(0)
-    import_result = gpg.import_keys(buffer.read().decode('UTF-8'))
+    import_gpg_key(buffer.read().decode('UTF-8'))
     length = buffer.tell()
     buffer.seek(0)
     buffer.write(b"\0"*length)
     buffer.close()
-    logger.info(f'key import result fingerprint: {", ".join(import_result.fingerprints)}')
 
 
 def copy_file_on_s3(local_filepath: str, bucket: str, remote_filepath: str):

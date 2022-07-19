@@ -5,6 +5,10 @@ import zipfile
 from os.path import join
 
 
+def import_gpg_key(import_key: str):
+    import_result = gpg.import_keys(import_key)
+    logger.info(f'key import result fingerprint: {", ".join(import_result.fingerprints)}')
+
 def decrypt(source_filepath: str):
     logger.info(os.stat(source_filepath))
     with open(source_filepath, 'rb') as f:
