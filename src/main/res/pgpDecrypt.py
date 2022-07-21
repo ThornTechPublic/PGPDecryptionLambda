@@ -80,8 +80,6 @@ def process_file(local_filepath: str):
             except FileNotFoundError:
                 logger.info(f"{local_filepath} already deleted")
             return sort_local_file(decrypted.path, DOWNLOAD_DIR)
-    else:
-        raise NotImplementedError(".zip files not allowed yet!")
     # elif local_filepath.endswith('.zip'):
     #     # process zip file
     #     logger.info(f'Unzipping {local_filepath}')
