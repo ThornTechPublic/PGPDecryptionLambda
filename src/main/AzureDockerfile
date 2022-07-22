@@ -9,4 +9,4 @@ COPY ./Azure/requirements.txt /
 RUN pip install -r /requirements.txt
 
 COPY ./Azure /home/site/wwwroot
-COPY ./res /home/site/wwwroot/res
+COPY ./res /home/site/wwwroot/src/main/res
