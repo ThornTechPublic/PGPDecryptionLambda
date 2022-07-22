@@ -1,0 +1,19 @@
+{
+  "bucket": "chris-pgp-encrypted-dev",
+  "contentType": "application/octet-stream",
+  "crc32c": "Q4PetQ==",
+  "etag": "CIrG76nTivkCEAE=",
+  "generation": "1658429500023562",
+  "id": "chris-pgp-encrypted-dev/test_file.txt.gpg/1658429500023562",
+  "kind": "storage#object",
+  "md5Hash": "6eJVbToCMXuqC6/Bh6hGBw==",
+  "mediaLink": "https://www.googleapis.com/download/storage/v1/b/chris-pgp-encrypted-dev/o/test_file.txt.gpg?generation=1658429500023562&alt=media",
+  "metageneration": "1",
+  "name": "test_file.txt.gpg",
+  "selfLink": "https://www.googleapis.com/storage/v1/b/chris-pgp-encrypted-dev/o/test_file.txt.gpg",
+  "size": "363",
+  "storageClass": "STANDARD",
+  "timeCreated": "2022-07-21T18:51:40.122Z",
+  "timeStorageClassUpdated": "2022-07-21T18:51:40.122Z",
+  "updated": "2022-07-21T18:51:40.122Z"
+}
