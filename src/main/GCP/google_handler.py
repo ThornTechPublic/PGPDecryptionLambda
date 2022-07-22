@@ -9,37 +9,39 @@ from urllib import parse
 import re
 
 from google.cloud.storage import Bucket, Client
-client = Client()
+
+def get_client():
+    return Client()
 
 
 def move_on_gcp(dest_pattern: str, bucket_name: str, remote_filepath: str):
-    bucket_obj = Bucket(client, bucket_name)
+    bucket_obj = Bucket(get_client(), bucket_name)
     source_blob = bucket_obj.blob(remote_filepath)
     path, filename = os.path.split(remote_filepath)
     dest_remote_filepath = dest_pattern.replace(r"\1", path).replace(r"\2", filename).strip('/')
     logger.info('move original file to ' + dest_remote_filepath)
-    bucket_obj.copy_blob(source_blob, bucket_obj, dest_remote_filepath, client)
+    bucket_obj.copy_blob(source_blob, bucket_obj, dest_remote_filepath, get_client())
     logger.info('deleting original upload file')
-    source_blob.delete(client)
+    source_blob.delete(get_client())
 
 
 def download_file_on_gcp(bucket_name: str, remote_filepath: str):
     download_filepath = join(DOWNLOAD_DIR, trim_path_to_filename(randomize_filename(remote_filepath)))
     logger.info(f'downloading gcp://{bucket_name}/{remote_filepath} to {download_filepath}')
-    Bucket(client, bucket_name).blob(remote_filepath).download_to_filename(download_filepath, client)
+    Bucket(get_client(), bucket_name).blob(remote_filepath).download_to_filename(download_filepath, get_client())
     return download_filepath
 
 
 # download the private encryption key from gcp
 def download_asc_on_gcp():
     logger.info(f'Attempting to download key from gcp://{PGP_KEY_LOCATION}/{ASC_REMOTE_KEY}')
-    blob_obj = Bucket(client, PGP_KEY_LOCATION).blob(ASC_REMOTE_KEY)
-    import_gpg_key(blob_obj.download_as_bytes(client).decode('UTF-8'))
+    blob_obj = Bucket(get_client(), PGP_KEY_LOCATION).blob(ASC_REMOTE_KEY)
+    import_gpg_key(blob_obj.download_as_bytes(get_client()).decode('UTF-8'))
 
 
 def copy_file_on_gcp(local_filepath: str, bucket_name: str, remote_filepath: str):
     logger.info(f'Uploading: {local_filepath} to {bucket_name}/{remote_filepath}')
-    Bucket(client, bucket_name).blob(remote_filepath).upload_from_filename(local_filepath)
+    Bucket(get_client(), bucket_name).blob(remote_filepath).upload_from_filename(local_filepath)
 
 
 # Filepath here is the full path including folders and the filename (and extension) of the remote file

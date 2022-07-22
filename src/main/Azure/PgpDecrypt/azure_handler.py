@@ -1,5 +1,5 @@
-from res.sharedconstants import *
-from res.pgpDecrypt import process_file, import_gpg_key
+from src.main.res.sharedconstants import *
+from src.main.res.pgpDecrypt import process_file, import_gpg_key
 
 import os
 import sys
