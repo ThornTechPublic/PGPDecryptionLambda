@@ -1,8 +1,10 @@
+import base64
 import json
 import unittest
 from importlib.resources import files
 from unittest import mock
 
+import azure.functions
 from aws_lambda_context import LambdaContext as awscontext
 
 import src.main.AWS.aws_handler as aws_handler
@@ -64,11 +66,14 @@ class TestPgpDecrypt(unittest.TestCase):
                          copy_file_on_az=mock.DEFAULT)
     def test_azure_event(self, remove, download_file_on_az, download_asc_on_az, copy_file_on_az):
         download_file_on_az.return_value = 'resource/test_file.txt.gpg'
-        azureevent = bytearray(files('event').joinpath('blobevent.dat').read_bytes())
+
+        event_data = json.loads(files('event').joinpath('azureevent.json').read_bytes())
+        event_data["data"] = base64.b64decode(event_data["data"].encode("UTF-8"))
+        azureevent = azure.functions.blob.InputStream(**event_data)
 
         azure_handler.invoke(azureevent)
-        download_file_on_az.assert_called_with('chris-pgp-encrypted-dev', 'test_file.txt.gpg')
-        remove.assert_called_with('resource/test_file.txt.gpg')
+        download_file_on_az.assert_called_with('pgptest1', 'test_file.txt.gpg')
+        remove.assert_any_call('resource/test_file.txt.gpg')
         copy_file_on_az.assert_called_with('/tmp/downloads/test_file.txt', None, 'test_file.txt')
 
 
