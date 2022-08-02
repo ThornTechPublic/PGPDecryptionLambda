@@ -5,6 +5,10 @@ import zipfile
 from os.path import join
 
 
+def import_gpg_key(import_key: str):
+    import_result = gpg.import_keys(import_key)
+    logger.info(f'key import result fingerprint: {", ".join(import_result.fingerprints)}')
+
 def decrypt(source_filepath: str):
     logger.info(os.stat(source_filepath))
     with open(source_filepath, 'rb') as f:
@@ -76,8 +80,6 @@ def process_file(local_filepath: str):
             except FileNotFoundError:
                 logger.info(f"{local_filepath} already deleted")
             return sort_local_file(decrypted.path, DOWNLOAD_DIR)
-    else:
-        raise NotImplementedError(".zip files not allowed yet!")
     # elif local_filepath.endswith('.zip'):
     #     # process zip file
     #     logger.info(f'Unzipping {local_filepath}')
