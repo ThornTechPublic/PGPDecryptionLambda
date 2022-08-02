@@ -21,7 +21,6 @@ file, decrypt it, and place it into a done target cloud storage location.
 * [Azure requirements](src/main/Azure/README.md#Requirements)
 * [GCP requirements](src/main/GCP/README.md#Requirements)
 
-
 ## Environment setup
 
 1. run `pipenv install -r src/provider/requirements.txt`
@@ -45,8 +44,40 @@ file, decrypt it, and place it into a done target cloud storage location.
 2. run `pipenv install -r src/requriement.txt`
 
 ## Shared Module
-All cloud providers use the `src/main/res/` module and its contents for pgp decryption. Before deploying to any 
-cloud provider you should copy the contents of the res directory into the provider specific res directory. 
+
+All cloud providers use the `src/main/res/` module and its contents for pgp decryption. Before deploying to any
+cloud provider you should copy the contents of the res directory into the provider specific res directory.
+
+## Runtime Environment Variables 
+
+```yaml
+LOG_LEVEL:
+    Allowed Values: [ CRITICAL | ERROR | WARNING | INFO | DEBUG | NOTSET ]
+    Description: "(Optional) Set log level if desired."
+    Default: INFO
+    Type: String
+PGP_PASSPHRASE:
+    Type: String
+    Description: "(Optional) Set PGP Key passphrase if applicable "
+    Default: None
+PGP_KEY_LOCATION:
+    Type: String
+    Description: "Cloud storage location where the PGP private key is located"
+PGP_KEY_NAME:
+    Type: String
+    Description: "Name of the PGP private key"
+DECRYPTED_DONE_LOCATION:
+    Type: String
+    Description: "Cloud storage location where files will land lambda decryption"
+ARCHIVE:
+    Type: Boolean
+    Default: false
+    Descritption: "(Optional) If true, files that have already been decrypted will be moved into an archive folder in the source storage location"
+ERROR:
+    Type: Boolean
+    Default: false
+    Descritption: "(Optional) If true, files that encounter an error will decrypting will be moved into an error folder in the source storage location"
+```
 
 # GPG Basics
 
