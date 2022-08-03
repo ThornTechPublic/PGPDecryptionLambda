@@ -48,7 +48,6 @@ def download_asc_on_az():
     if isinstance(key_data, bytes):
         key_data = key_data.decode("UTF-8")
     import_gpg_key(key_data)
-    logger.info(f'key import result fingerprint: {", ".join(import_result.fingerprints)}')
 
 
 def copy_file_on_az(local_filepath: str, container: str, remote_filepath: str):
