@@ -70,13 +70,13 @@ DECRYPTED_DONE_LOCATION:
     Type: String
     Description: "Cloud storage location where files will land lambda decryption"
 ARCHIVE:
-    Type: Boolean
-    Default: false
-    Descritption: "(Optional) If true, files that have already been decrypted will be moved into an archive folder in the source storage location"
+    Type: String
+    Default: ""
+    Descritption: "(Optional) Archive folder path. If supplied, files that have already been decrypted will be moved into the provided archive folder in the source storage location"
 ERROR:
-    Type: Boolean
-    Default: false
-    Descritption: "(Optional) If true, files that encounter an error will decrypting will be moved into an error folder in the source storage location"
+    Type: String
+    Default: ""
+    Descritption: "(Optional) Error folder path. If supplied, files that encounter an error while decrypting will be moved into the provided error folder in the source storage location"
 ```
 
 # GPG Basics
