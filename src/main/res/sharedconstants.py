@@ -62,12 +62,10 @@ create_folder_if_not_exists(LOCAL_UNZIPPED_DIR)
 create_folder_if_not_exists(LOCAL_READY_DIR)
 
 # Feature Flags
-ARCHIVE = os.getenv('ARCHIVE', default=False)
-if isinstance(ARCHIVE, str):
-    ARCHIVE = ARCHIVE.upper().strip() != "FALSE"
-ERROR = os.getenv('ERROR', default=False)
-if isinstance(ERROR, str):
-    ERROR = ERROR.upper().strip() != "FALSE"
+ARCHIVE = os.getenv('ARCHIVE', default="")
+if ARCHIVE.upper() == "FALSE": ARCHIVE = ""
+ERROR = os.getenv('ERROR', default="")
+if ERROR.upper() == "FALSE": ERROR = ""
 
 trim_path_to_filename = os.path.basename
 trim_path_to_directory = os.path.dirname
