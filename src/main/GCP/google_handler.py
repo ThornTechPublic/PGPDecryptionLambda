@@ -9,6 +9,10 @@ from urllib import parse
 import re
 
 from google.cloud.storage import Bucket, Client
+import google.cloud.logging as google_logger
+
+client = google_logger.Client()
+client.setup_logging(log_level=os.getenv("LOG_LEVEL", "INFO"))
 
 def get_client():
     return Client()
