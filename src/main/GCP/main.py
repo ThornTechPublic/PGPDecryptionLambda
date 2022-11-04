@@ -1,8 +1,13 @@
-from src.main.res.sharedconstants import *
-from src.main.res.pgpDecrypt import process_file, import_gpg_key
+import base64
+
+import functions_framework
+
+from res.sharedconstants import *
+from res.pgpDecrypt import process_file, import_gpg_key
 
 import os
 import sys
+import json
 import traceback
 from os.path import join
 from urllib import parse
@@ -61,17 +66,23 @@ def archive_on_gcp(bucket: str, filepath: str):
         move_on_gcp(ARCHIVE, bucket, filepath)
 
 
-def invoke(event, context):
-    logger.info('Google Event: ' + str(event))
-    bucket_name = event["bucket"]
-    remote_filepath = parse.unquote_plus(event["name"])
+@functions_framework.http
+def invoke(event):
+    event_data = json.loads(base64.b64decode(json.loads(event.data).get('message').get('data')))
+    logger.debug('Google Event: ' + str(event_data))
+
+    bucket_name = event_data["bucket"]
+    remote_filepath = parse.unquote_plus(event_data["name"])
 
     if not remote_filepath.endswith(('.pgp', '.gpg', '.zip')):
         logger.info(f'File {remote_filepath} is not an encrypted file... Skipping')
+        return 'OK'
     elif ARCHIVE and re.fullmatch(ARCHIVE.replace(r"\1/", ".*/?", 1).replace(r"\1", ".+").replace(r"\2", "[^/]+"), remote_filepath) is not None:
         logger.info('Archive event triggered... Skipping')
+        return 'OK'
     elif ERROR and re.fullmatch(ERROR.replace(r"\1/", ".*/?", 1).replace(r"\1", ".+").replace(r"\2", "[^/]+"), remote_filepath) is not None:
         logger.info('Error event triggered... Skipping')
+        return 'OK'
     else:
         try:
             logger.info(f'Begin Processing gcp://{bucket_name}/{remote_filepath}')
@@ -79,9 +90,9 @@ def invoke(event, context):
             if '.' not in remote_filepath:
                 logger.info(f'Skipping processing of folder {remote_filepath}')
                 return
-            elif int(event['size']) == 0:
+            elif int(event_data['size']) == 0:
                 logger.info(f'File {remote_filepath} is a placeholder file... Skipping')
-                return
+                return 'OK'
 
             local_filepath = download_file_on_gcp(bucket_name, remote_filepath)
             download_asc_on_gcp()
@@ -91,6 +102,7 @@ def invoke(event, context):
             dest_remote_filepath = os.path.splitext(remote_filepath)[0]
             copy_file_on_gcp(local_filepath, DECRYPTED_DONE_LOCATION, dest_remote_filepath)
             archive_on_gcp(bucket_name, remote_filepath)
+            return 'OK'
         except Exception as ex:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
@@ -98,4 +110,4 @@ def invoke(event, context):
                       The file has been moved to the error folder. Stack trace follows: {"".join("!! " + line for line in lines)}'
             logger.error(message)
             error_on_gcp(bucket_name, remote_filepath)
-            raise ex
+            return 'FAILURE'

@@ -9,7 +9,7 @@ from aws_lambda_context import LambdaContext as awscontext
 
 import src.main.AWS.aws_handler as aws_handler
 import src.main.Azure.PgpDecrypt.azure_handler as azure_handler
-import src.main.GCP.google_handler as google_handler
+import src.main.GCP.main as google_handler
 import src.main.res.pgpDecrypt as pgpDecrypt
 import src.main.res.sharedconstants as sharedconstants
 
