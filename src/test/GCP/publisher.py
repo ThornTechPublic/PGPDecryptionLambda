@@ -68,13 +68,7 @@ def publish_messages(project_id: str, topic_id: str) -> None:
     # TODO(developer)
     # project_id = "your-project-id"
     # topic_id = "your-topic-id"
-
-    publisher = pubsub_v1.PublisherClient()
-    # The `topic_path` method creates a fully qualified identifier
-    # in the form `projects/{project_id}/topics/{topic_id}`
-    topic_path = publisher.topic_path(project_id, topic_id)
-
-    data_str = json.dumps({
+    event_message = {
         "kind": "storage#object",
         "id": "chris-support-pgp-source/test_file.txt.gpg/1667216398052507",
         "selfLink": "https://www.googleapis.com/storage/v1/b/chris-support-pgp-source/o/test_file.txt.gpg",
@@ -92,7 +86,14 @@ def publish_messages(project_id: str, topic_id: str) -> None:
         "mediaLink": "https://storage.googleapis.com/download/storage/v1/b/chris-support-pgp-source/o/test_file.txt.gpg?generation=1667216398052507&alt=media",
         "crc32c": "Q4PetQ==",
         "etag": "CJvZrYmxivsCEAE="
-    })
+    }
+
+    publisher = pubsub_v1.PublisherClient()
+    # The `topic_path` method creates a fully qualified identifier
+    # in the form `projects/{project_id}/topics/{topic_id}`
+    topic_path = publisher.topic_path(project_id, topic_id)
+
+    data_str = json.dumps(event_message)
     # Data must be a bytestring
     data = data_str.encode("utf-8")
     # When you publish a message, the client returns a future.

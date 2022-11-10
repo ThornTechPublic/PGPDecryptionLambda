@@ -52,7 +52,7 @@ Registry, and deploying that Artifact Image to Google Cloud Run.
   [Service Account Permissions](#service-account-permissions) section
 * Click Deploy 
 
-## Configure PubSub notifications for Cloud Storage
+## Configure PubSub Notifications for Cloud Storage
 The steps for configuring the notification event for Cloud Storage can be found in this 
 [GCP documentation](https://cloud.google.com/storage/docs/reporting-changes#command-line)
 
