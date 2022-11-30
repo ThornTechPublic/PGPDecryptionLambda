@@ -1,0 +1,23 @@
+FROM alpine:3.14
+
+RUN apk add gnupg build-base zlib-dev openssl-dev readline sqlite-libs tcl-dev ncurses-libs gdbm libc6-compat libbz2 libffi-dev bzip2-dev xz-dev
+
+RUN wget https://www.python.org/ftp/python/3.9.6/Python-3.9.6.tgz &&\
+    tar -xzf Python-3.9.6.tgz
+RUN cd Python-3.9.6 && \
+    ./configure --enable-optimizations &&\
+    make && \
+    make install
+
+ENV APP_HOME /app
+WORKDIR $APP_HOME
+COPY ./GCP .
+COPY ./res ./res
+
+EXPOSE 8080
+
+RUN python3.9 --version \
+    python3.9 -m pip install --upgrade pip && \
+    python3.9 -m pip install -r ./requirements.txt
+
+CMD exec functions-framework --target=invoke
