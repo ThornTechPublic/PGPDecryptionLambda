@@ -1,81 +1,154 @@
-# To enable ssh & remote debugging on app service change the base image to the one below
-#FROM mcr.microsoft.com/azure-functions/python:3.0-python3.9-appservice
-FROM mcr.microsoft.com/azure-functions/python:3.0-python3.9
-
+###########################################
+## Define docker file args for global scope
+###########################################
 ARG buildprefix=/usr
 ARG buildlibdir=$buildprefix/lib64
 
+
+############################################################
+## Define the base image for use in multiple stages of build
+############################################################
+FROM mcr.microsoft.com/azure-functions/python:3.0-python3.9 as base
+
+
+##################################################
+## Build stage for building Gnupg binaries/libraries
+##################################################
+FROM base as build
+
+# Include args from global scope for use in this stage
+ARG buildprefix
+ARG buildlibdir
+
+# Install required packages for building Gnupg binaries/libraries
 RUN apt-get install -y gcc make
 
+# Set working directory
 WORKDIR /build
 
 #	Install the package libgpg-error:
 ADD https://gnupg.org/ftp/gcrypt/libgpg-error/libgpg-error-1.46.tar.bz2 .
-
-RUN tar -xf libgpg-error-1.46.tar.bz2 \
-  && cd libgpg-error-1.46  \
+RUN tar -xf libgpg-error-1.46.tar.bz2                         \
+  && cd libgpg-error-1.46                                     \
   && ./configure --prefix=$buildprefix --libdir=$buildlibdir --enable-install-gpg-error-config \
-  && make \
+  && make                                                     \
   && make install
 
 #	Install the package libgcrypt:
 ADD https://gnupg.org/ftp/gcrypt/libgcrypt/libgcrypt-1.10.1.tar.bz2 .
-
-RUN tar -xf libgcrypt-1.10.1.tar.bz2 \
-  && cd libgcrypt-1.10.1/  \
+RUN tar -xf libgcrypt-1.10.1.tar.bz2                          \
+  && cd libgcrypt-1.10.1/                                     \
   && ./configure --prefix=$buildprefix --libdir=$buildlibdir  \
-  && make  \
+  && make                                                     \
   && make install
 
 #	Install the package libassuan:
 ADD https://gnupg.org/ftp/gcrypt/libassuan/libassuan-2.5.5.tar.bz2 .
-
-RUN tar -xf libassuan-2.5.5.tar.bz2 \
-  && cd libassuan-2.5.5/  \
-  && ./configure  --prefix=$buildprefix --libdir=$buildlibdir  \
-  && make  \
+RUN tar -xf libassuan-2.5.5.tar.bz2                             \
+  && cd libassuan-2.5.5/                                        \
+  && ./configure  --prefix=$buildprefix --libdir=$buildlibdir   \
+  && make                                                       \
   && make install
 
 #	Install the package libksba:
 ADD https://gnupg.org/ftp/gcrypt/libksba/libksba-1.6.2.tar.bz2 .
-
-RUN tar -xf libksba-1.6.2.tar.bz2 \
-  && cd libksba-1.6.2/  \
-  && ./configure  --prefix=$buildprefix --libdir=$buildlibdir  \
-  && make  \
+RUN tar -xf libksba-1.6.2.tar.bz2                               \
+  && cd libksba-1.6.2/                                          \
+  && ./configure  --prefix=$buildprefix --libdir=$buildlibdir   \
+  && make                                                       \
   && make install
 
 #	Install the package New Portable Threads Library (nPth):
 ADD https://gnupg.org/ftp/gcrypt/npth/npth-1.6.tar.bz2 .
-
-RUN tar -xf npth-1.6.tar.bz2 \
-  && cd npth-1.6/  \
-  && ./configure  --prefix=$buildprefix --libdir=$buildlibdir  \
-  && make  \
+RUN tar -xf npth-1.6.tar.bz2                                    \
+  && cd npth-1.6/                                               \
+  && ./configure  --prefix=$buildprefix --libdir=$buildlibdir   \
+  && make                                                       \
   && make install
 
 #	Create a dynamic library for the latest version of GnuPG:
 RUN echo "$buildlibdir" > /etc/ld.so.conf.d/gpg2.conf \
-  && ldconfig -v
+  && /sbin/ldconfig -v
 
 #	Install the latest version of GnuPG:
 ADD https://gnupg.org/ftp/gcrypt/gnupg/gnupg-2.2.40.tar.bz2 .
-
-RUN tar -xf gnupg-2.2.40.tar.bz2 \
-  && cd gnupg-2.2.40/  \
+RUN tar -xf gnupg-2.2.40.tar.bz2                              \
+  && cd gnupg-2.2.40/                                         \
   && ./configure --prefix=$buildprefix --libdir=$buildlibdir  \
-  && sed -e '/ks_ldap_free_state/i #if USE_LDAP' \
-     -e '/ks_get_state =/a #endif'           \
-     -i dirmngr/server.c \
-  && make \
-  && make check \
+  && sed -e '/ks_ldap_free_state/i #if USE_LDAP'              \
+     -e '/ks_get_state =/a #endif'                            \
+     -i dirmngr/server.c                                      \
+  && make                                                     \
   && make install
 
+
+#######################################
+## Final build stage for production use
+#######################################
+FROM base
+
+# Include args from global scope for use in this stage
+ARG buildprefix
+ARG buildlibdir
+
+# Copy requisite Gnupg libraries from build image to production image
+COPY --from=build [                         \
+  "${buildlibdir}/libassuan.la",            \
+  "${buildlibdir}/libassuan.so",            \
+  "${buildlibdir}/libassuan.so.0",          \
+  "${buildlibdir}/libassuan.so.0.8.5",      \
+  "${buildlibdir}/libgcrypt.la",            \
+  "${buildlibdir}/libgcrypt.so",            \
+  "${buildlibdir}/libgcrypt.so.20",         \
+  "${buildlibdir}/libgcrypt.so.20.4.1",     \
+  "${buildlibdir}/libgpg-error.la",         \
+  "${buildlibdir}/libgpg-error.so",         \
+  "${buildlibdir}/libgpg-error.so.0",       \
+  "${buildlibdir}/libgpg-error.so.0.33.1",  \
+  "${buildlibdir}/libksba.la",              \
+  "${buildlibdir}/libksba.so",              \
+  "${buildlibdir}/libksba.so.8",            \
+  "${buildlibdir}/libksba.so.8.14.2",       \
+  "${buildlibdir}/libnpth.la",              \
+  "${buildlibdir}/libnpth.so",              \
+  "${buildlibdir}/libnpth.so.0",            \
+  "${buildlibdir}/libnpth.so.0.1.2",        \
+  "${buildlibdir}/pkgconfig",               \
+  "${buildlibdir}/"                         \
+  ]
+
+# Copy Gnupg binaries from build image to production image
+COPY --from=build [                         \
+  "${buildprefix}/bin/dirmngr",             \
+  "${buildprefix}/bin/dirmngr-client",      \
+  "${buildprefix}/bin/gpg",                 \
+  "${buildprefix}/bin/gpg-agent",           \
+  "${buildprefix}/bin/gpgconf",             \
+  "${buildprefix}/bin/gpg-connect-agent",   \
+  "${buildprefix}/bin/gpgparsemail",        \
+  "${buildprefix}/bin/gpgscm",              \
+  "${buildprefix}/bin/gpgsm",               \
+  "${buildprefix}/bin/gpgsplit",            \
+  "${buildprefix}/bin/gpgtar",              \
+  "${buildprefix}/bin/gpgv",                \
+  "${buildprefix}/bin/gpg-wks-server",      \
+  "${buildprefix}/bin/kbxutil",             \
+  "${buildprefix}/bin/watchgnupg",          \
+  "${buildprefix}/bin/"                     \
+  ]
+
+#	Create a dynamic library for the latest version of GnuPG:
+RUN echo "$buildlibdir" > /etc/ld.so.conf.d/gpg2.conf \
+  && /sbin/ldconfig -v
+
+# Set Azure Function environment variables
 ENV AzureWebJobsScriptRoot=/home/site/wwwroot \
     AzureFunctionsJobHost__Logging__Console__IsEnabled=true
 
+# Copy Python requirements to docker image and install
 COPY ./Azure/requirements.txt /
 RUN pip install -r /requirements.txt
 
+# Copy project source code to docker image
 COPY ./Azure /home/site/wwwroot
 COPY ./res /home/site/wwwroot/src/main/res
